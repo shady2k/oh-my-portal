@@ -11,7 +11,7 @@
 # --- build ---
 node_modules/
 dist/
-dist-test/
+dist-test*/
 .astro/
 
 # --- content ---

@@ -388,20 +388,35 @@ reachability rather than on anything experimental.
 
 ### Content negotiation in nginx, no serverless
 
-No edge layer is needed; the reverse proxy does it. The build emits **two trees**
-and negotiation is a single `map`:
+No edge layer is needed; the reverse proxy does it. Negotiation is a single
+`map`, and it swaps the **index file** rather than the document root:
 
 ```nginx
-map $http_accept $site_root {
-    default            /srv/site/html;
-    "~*text/markdown"  /srv/site/md;
+map $http_accept $site_index {
+    default            index.html;
+    "~*text/markdown"  index.md;
 }
 server {
-    root $site_root;
+    root /srv/site;
+    try_files $uri $uri/$site_index =404;
+    types { text/markdown md; }
     add_header Vary Accept always;
     add_header Link '</llms.txt>; rel="alternate"; type="text/plain"' always;
 }
 ```
+
+*An earlier draft of this section emitted two trees and swapped `root` between
+them.* The behaviour is identical and the cost is not: `astro build` writes
+`index.html` and `index.md` side by side for every address, so one tree means one
+deploy and no second copy of the site that can fall out of step with the first.
+
+What makes the swap safe is a gate rather than care: under it, an address whose
+directory has no `index.md` is a 404 **for agents only** — invisible in a browser,
+and therefore invisible in review. `scripts/check-outputs.ts` fails the build on a
+missing twin, which is R10 stated as something a machine checks. The live
+assertion, that a real server returns markdown for `Accept: text/markdown` and
+sets `Vary` on the response, belongs with the redirect tests against a running
+deployment.
 
 **`Vary: Accept` is mandatory.** Without it any cache or proxy will hand markdown
 to a browser and HTML to an agent. That is the most expensive mistake available

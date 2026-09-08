@@ -6,26 +6,49 @@
 #
 # What it has to get right, and why:
 #
-#   1. /rss/ serves the feed at its original address (R2). Astro writes the feed
-#      to rss/index.xml, because /rss/ is a directory address and not an .xml
-#      file; this block maps one onto the other and sets the feed content type,
-#      which `index` alone would not.
-#   2. Every old address 301s in one hop (R1) — nginx/redirects.conf, generated
+#   1. Content negotiation on Accept (design §6, §7), with `Vary: Accept`.
+#   2. /rss/ serves the feed at its original address (R2).
+#   3. Every old address 301s in one hop (R1) — nginx/redirects.conf, generated
 #      from migration/redirects.yaml by `npm run redirects`.
+#   4. The Link header advertising /llms.txt on every response (§7).
+
+# --- negotiation -------------------------------------------------------------
 #
-# Content negotiation on Accept (design §7, the `map` that serves the markdown
-# tree at the same addresses) is NOT here yet: it arrives with the ai-first
-# layer, together with the mandatory `Vary: Accept`. Adding negotiation without
-# that header is the most expensive mistake available in this design, so it is
-# added as one change, not in halves.
+# Design §7 describes two build trees and a map that swaps the document root.
+# This does the same job by swapping the *index file* inside one tree instead:
+# `astro build` writes index.html and index.md side by side for every address,
+# so there is one tree, one deploy, and no second copy of the site to fall out
+# of step with the first. The observable behaviour is the one §7 specifies.
+#
+# `scripts/check-outputs.ts` fails the build if any address is missing its
+# index.md, which is what makes the swap safe: without that gate a forgotten
+# twin would be a silent 404 for agents only.
+map $http_accept $site_index {
+    default            index.html;
+    "~*text/markdown"  index.md;
+}
 
 server {
     listen 443 ssl;
     http2 on;
     server_name example.invalid;          # <- the site's host
 
-    root /srv/site/html;                  # <- where `astro build` output is deployed
+    root /srv/site;                       # <- where `astro build` output is deployed
     index index.html;
+
+    # `.md` files must go out as markdown, not as the default type. This applies
+    # to the negotiated index.md and to the /posts/<slug>.md twins alike.
+    types {
+        text/markdown md;
+    }
+
+    # MANDATORY. Without it any cache or proxy will hand markdown to a browser
+    # and HTML to an agent — the most expensive mistake available in this design
+    # (§7). `always` so it is set on error responses too.
+    add_header Vary Accept always;
+
+    # Header-level discovery: the client needs no HTML parsing (§7).
+    add_header Link '</llms.txt>; rel="alternate"; type="text/plain"' always;
 
     # R1. Old addresses, one hop each, 301. Generated — never edit by hand.
     include /etc/nginx/conf.d/redirects.conf;
@@ -38,10 +61,15 @@ server {
         try_files /rss/index.xml =404;
     }
 
+    # Not content and not negotiable: these have one representation each.
+    location = /llms.txt { }
+    location = /llms-full.txt { }
+    location = /index.json { }
+
     # Astro builds with `format: 'directory'` and `trailingSlash: 'always'`, so
-    # every route is a directory holding index.html.
+    # every route is a directory holding index.html and index.md.
     location / {
-        try_files $uri $uri/ $uri/index.html =404;
+        try_files $uri $uri/$site_index =404;
     }
 
     error_page 404 /404.html;

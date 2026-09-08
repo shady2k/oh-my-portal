@@ -69,9 +69,15 @@ back. Notes and criteria do have appenders: `--append-notes`, `--add-acceptance`
 
 **Every issue needs a `## Acceptance Criteria` section in its description**, as
 a `- [ ]` checklist a stranger could tick without asking anyone. `br lint` is
-the gate and must be clean before handoff. Note that `br lint` reads the
-markdown heading in the description while `--acceptance-criteria` sets a
-separate structured field; a well-formed issue has both.
+the gate and must be clean before handoff.
+
+The list lives in two places and they do not update together: `br lint` reads
+the markdown heading in the **description**, while `--acceptance-criteria`,
+`--add-acceptance` and `--check-acceptance` operate on a separate **structured
+field**. A well-formed issue has both, and ticking an item means updating both —
+run `--check-acceptance`, then rewrite the description's section from the field
+with `--description-file`. Ticking only the field leaves the description saying
+the work is undone.
 
 ### Finishing
 

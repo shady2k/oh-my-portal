@@ -19,6 +19,11 @@ interface Props {
 const { title, description, lang = 'ru', noindex = false } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
+/*
+ * Design §6: `<link rel="alternate">` for clients that read the head rather than
+ * negotiating. Directory addresses only — those are the ones that have a twin.
+ */
+const markdown = Astro.url.pathname.endsWith('/') ? `${Astro.url.pathname}index.md` : null;
 /* Counted through the collection, so the shell never learns where content comes from. */
 const posts = (await getCollection('posts')).filter((p) => p.data.status === 'published').length;
 const built = new Date().toISOString().slice(0, 10);
@@ -39,6 +44,7 @@ const built = new Date().toISOString().slice(0, 10);
     */}
     <link rel="alternate" hreflang={lang} href={canonical} />
     <link rel="alternate" hreflang="x-default" href={canonical} />
+    {markdown && <link rel="alternate" type="text/markdown" href={markdown} />}
     <link rel="alternate" type="application/rss+xml" title={title} href="/rss/" />
   </head>
   <body>
