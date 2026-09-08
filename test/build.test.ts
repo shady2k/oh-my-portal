@@ -3,6 +3,8 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { build } from './helpers.ts';
+
 /**
  * The routes and the draft rule, asserted against a real build rather than
  * against the helpers that produce it — a page that forgets to filter drafts
@@ -12,21 +14,8 @@ const OUT = 'dist-test';
 const OUT_PREVIEW = 'dist-test-preview';
 const page = (path: string, out = OUT) => join(out, path, 'index.html');
 
-/**
- * Each build gets its own directory. Sharing one made a later describe's
- * beforeAll overwrite what an earlier describe was asserting against, which is
- * a test that passes or fails on file order rather than on behaviour.
- */
-const build = (env: Record<string, string>, out = OUT) => {
-  rmSync(out, { recursive: true, force: true });
-  execFileSync('npx', ['astro', 'build', '--outDir', out], {
-    env: { ...process.env, CONTENT_DIR: 'test/fixtures/posts', ...env },
-    stdio: 'pipe',
-  });
-};
-
 describe('a production build', () => {
-  beforeAll(() => build({}), 120_000);
+  beforeAll(() => build({}, OUT), 120_000);
 
   it('puts articles under /posts/<slug>/, per design §5', () => {
     expect(existsSync(page('posts/published-example'))).toBe(true);
@@ -75,7 +64,7 @@ describe('a preview build', () => {
 });
 
 describe('the ai-first outputs (R10)', () => {
-  beforeAll(() => build({}), 120_000);
+  beforeAll(() => build({}, OUT), 120_000);
 
   const read = (p: string) => readFileSync(join(OUT, p), 'utf8');
 
@@ -111,7 +100,7 @@ describe('the ai-first outputs (R10)', () => {
 });
 
 describe('the R10 gate', () => {
-  beforeAll(() => build({}), 120_000);
+  beforeAll(() => build({}, OUT), 120_000);
 
   const check = (dir: string) => {
     try {

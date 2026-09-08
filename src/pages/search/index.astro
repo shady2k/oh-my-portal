@@ -1,0 +1,205 @@
+---
+import Base from '../../layouts/Base.astro';
+
+/**
+ * `/search/` — design §10 (1c) and §11.
+ *
+ * Pagefind: a lexical index built at build time. No server, no database, no
+ * runtime anything. §11 is explicit that this is not a limitation to fix later —
+ * the corpus is proper nouns and version numbers, and `some-tool 1.17` and
+ * `some-tool 1.19` are nearly the same vector, so embeddings would do worse at
+ * exactly the queries readers actually type.
+ *
+ * The UI is ours rather than Pagefind's bundled widget. §12: borrow the
+ * typography, not someone else's vocabulary — and the widget arrives with its
+ * own visual language, which would read as a foreign object on the page.
+ */
+---
+
+<Base title="Поиск" description="Поиск по записям: точные имена инструментов и версии." noindex>
+  <h1 class="highlight"><span>Поиск</span></h1>
+
+  <form id="search" role="search" hidden>
+    <label class="field-label" for="q">запрос</label>
+    <input
+      id="q"
+      type="search"
+      name="q"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      placeholder="имя инструмента, версия, слово из текста"
+    />
+    <p id="status" class="utility" role="status" aria-live="polite"></p>
+  </form>
+
+  {/*
+    The default state is the no-JavaScript state, and the script reveals the
+    form. A search box that looks functional and silently does nothing is worse
+    than an honest message.
+  */}
+  <noscript>
+    <p>
+      Поиск работает на индексе, который читается в браузере, поэтому без
+      JavaScript его нет.
+    </p>
+  </noscript>
+  <p id="unavailable">
+    Поиск требует JavaScript. Без него остаются <a href="/">список записей</a>,
+    темы на главной и <a href="/rss/">RSS</a>.
+  </p>
+
+  <ul id="results" class="list"></ul>
+</Base>
+
+<script>
+  const form = document.querySelector('#search') as HTMLFormElement;
+  const input = document.querySelector('#q') as HTMLInputElement;
+  const status = document.querySelector('#status') as HTMLElement;
+  const results = document.querySelector('#results') as HTMLUListElement;
+  const unavailable = document.querySelector('#unavailable') as HTMLElement;
+
+  type Result = {
+    url: string;
+    excerpt: string;
+    meta: Record<string, string | undefined>;
+  };
+  type Pagefind = {
+    init: () => Promise<void>;
+    search: (q: string) => Promise<{ results: { data: () => Promise<Result> }[] }>;
+  };
+
+  let pagefind: Pagefind | null = null;
+
+  /**
+   * The index only exists after `pagefind --site dist`, so there is nothing to
+   * import during `astro dev`. The path is held in a variable and marked
+   * ignored so Vite does not try to resolve it at build time either.
+   */
+  async function load(): Promise<Pagefind | null> {
+    if (pagefind) return pagefind;
+    const path = '/pagefind/pagefind.js';
+    try {
+      pagefind = (await import(/* @vite-ignore */ path)) as Pagefind;
+      await pagefind.init();
+      return pagefind;
+    } catch {
+      return null;
+    }
+  }
+
+  function render(items: Result[], query: string) {
+    results.replaceChildren();
+    if (!items.length) {
+      status.textContent = `Ничего не нашлось по запросу «${query}».`;
+      return;
+    }
+    status.textContent = `${items.length} совпадений.`;
+    for (const item of items) {
+      const li = document.createElement('li');
+
+      const h2 = document.createElement('h2');
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.textContent = item.meta.title ?? item.url;
+      h2.append(a);
+
+      const excerpt = document.createElement('p');
+      // Pagefind marks the matched terms; nothing else in the string is markup.
+      excerpt.innerHTML = item.excerpt;
+
+      li.append(h2, excerpt);
+
+      if (item.meta.date) {
+        const line = document.createElement('p');
+        line.className = 'utility';
+        const time = document.createElement('time');
+        time.dateTime = item.meta.date;
+        time.textContent = item.meta.date;
+        line.append(time);
+        li.append(line);
+      }
+      results.append(li);
+    }
+  }
+
+  let latest = 0;
+  async function run(query: string) {
+    const ticket = ++latest;
+    if (!query.trim()) {
+      results.replaceChildren();
+      status.textContent = '';
+      return;
+    }
+    const engine = await load();
+    if (!engine) {
+      status.textContent = 'Индекс недоступен: он появляется при сборке сайта.';
+      return;
+    }
+    const found = await engine.search(query);
+    const items = await Promise.all(found.results.slice(0, 20).map((r) => r.data()));
+    // A slower earlier query must not overwrite a faster later one.
+    if (ticket === latest) render(items, query);
+  }
+
+  form.hidden = false;
+  unavailable.remove();
+
+  let timer: number | undefined;
+  input.addEventListener('input', () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => run(input.value), 150);
+  });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    run(input.value);
+  });
+
+  // A link may arrive as /search/?q=...; answer it without a second action.
+  const initial = new URLSearchParams(location.search).get('q');
+  if (initial) {
+    input.value = initial;
+    run(initial);
+  }
+</script>
+
+<style>
+  input {
+    inline-size: 100%;
+    font-family: var(--face-utility);
+    font-size: var(--step-0);
+    padding: var(--space-2);
+    margin-block: var(--space-1) var(--space-2);
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 0;
+  }
+
+  input:focus-visible {
+    border-color: var(--ink);
+  }
+
+  .list {
+    list-style: none;
+    padding: 0;
+    margin-block-start: var(--space-4);
+  }
+
+  .list > li + li {
+    margin-block-start: var(--space-4);
+    padding-block-start: var(--space-3);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .list h2 {
+    font-size: var(--step-1);
+    margin-block: 0 var(--space-1);
+  }
+
+  /* Pagefind wraps matched terms in <mark>; make it the heading highlight. */
+  .list :global(mark) {
+    background: var(--highlight);
+    color: inherit;
+  }
+</style>

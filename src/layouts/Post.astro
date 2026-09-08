@@ -16,12 +16,28 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
 <Base title={data.title} description={data.summary} lang={data.lang} noindex={data.status === 'draft'}>
-  <article>
+  {/*
+    Pagefind indexes only what carries `data-pagefind-body`, and a page without
+    one is left out entirely — so listings, navigation and the status-line
+    footer never turn up as hits, and only articles are searchable.
+
+    It goes on the whole article rather than on the prose alone. The versions,
+    commands and symptoms live in the structured core (§6), not in the text
+    around it, and "good at exact tool names" is the reason §7 chose Pagefind at
+    all. Indexing prose only made `caddy` and `2.9.1` return nothing.
+
+    Drafts are absent from a production build, so they cannot reach the index by
+    this or any other route.
+  */}
+  <article data-pagefind-body>
     <header>
-      <h1 class="highlight"><span>{data.title}</span></h1>
+      <h1 class="highlight"><span data-pagefind-meta="title">{data.title}</span></h1>
+      {/* Read back by /search/ to render a result without fetching the page. */}
+      <meta data-pagefind-meta={`summary:${data.summary}`} />
+      <meta data-pagefind-meta={`date:${iso(data.date)}`} />
 
       {/* Utility-style field labels rather than decorative subheadings (§12). */}
-      <dl class="meta">
+      <dl class="meta" data-pagefind-ignore>
         <dt class="field-label">дата</dt>
         <dd><time datetime={iso(data.date)} class="utility">{iso(data.date)}</time></dd>
 
@@ -51,6 +67,23 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
           )
         }
       </dl>
+
+      {/*
+        `tools` says what the article covers (§4). It sits outside the ignored
+        block on purpose: an exact tool name is the query Pagefind was chosen
+        for, and until this rendered, an article about a tool could not be found
+        by that tool's name. The label is furniture; the names are the content.
+      */}
+      {
+        data.tools?.length && (
+          <p class="tools">
+            <span class="field-label" data-pagefind-ignore>
+              инструменты
+            </span>
+            <span class="utility">{data.tools.map((t) => `${t.name} ${t.version}`).join(' · ')}</span>
+          </p>
+        )
+      }
     </header>
 
     {data.recipe && <Core recipe={data.recipe} />}
@@ -100,6 +133,13 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-1);
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-block: calc(-1 * var(--space-3)) var(--space-4);
   }
 
   .after {
