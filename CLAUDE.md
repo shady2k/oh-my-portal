@@ -84,9 +84,12 @@ br lint                           # must be clean
 `br` never touches git. Staging and committing are yours, and in this repository
 they wait for the maintainer to ask (see *Git* below).
 
-**Do not run `br agents --add`.** Its generated block ends with a session
-protocol that says to `git commit` and `git push` every session, which is the
-opposite of this repository's rule.
+`br agents --add` has been run against **AGENTS.md**, which now carries `br`'s
+own generated block between `br-agent-instructions` markers. It is not copied
+here, because `br agents --update` would only refresh it there and the two would
+drift. Two parts of it do not apply — its session protocol ends in `git commit`
+and `git push`, and its command list omits the attribution flags — and a note
+before the markers in AGENTS.md says so.
 
 Memory left the tracker together with `bd`. Recall is now `deja` over the
 session transcripts of every agent on this machine:
