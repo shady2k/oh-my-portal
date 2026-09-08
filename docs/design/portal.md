@@ -67,8 +67,8 @@ under `examples/` — never real articles. The live site is the demo.
 
 | # | Requirement | Why |
 |---|---|---|
-| R1 | Every existing article URL returns 200 at its old address | Organic search is the site's only working distribution channel |
-| R2 | `/rss/` keeps working at the same address | Existing subscribers |
+| R1 | Every existing article URL 301-redirects, in a single hop, to a new address that returns 200 | Organic search is the site's only working distribution channel |
+| R2 | `/rss/` keeps working at its original address, not via a redirect | Feed readers handle moved feeds badly |
 | R3 | A way to make contact is visible from any page | Today there is none anywhere |
 | R4 | GitHub and projects are visible from any article | Currently invisible to readers |
 | R5 | Author block at the end of every article | The moment of peak reader interest |
@@ -131,26 +131,98 @@ A draft never reaches production — not by address, not in feeds.
 
 ## 5. Routes
 
-Ghost keeps articles at the root, so the root is taken. Reserved prefixes that
-must never be handed out as slugs:
+### We do not inherit Ghost's URL shape
+
+Ghost keeps articles at the root, and its slugs are transliterated Russian
+(`sovriemiennaia-zashchita-domashniei-laboratorii`). Both are inherited
+accidents, not decisions. Carrying them forward would occupy the root forever
+and freeze unreadable slugs into the new site.
+
+Instead we design a scheme and **301-redirect every old address to its new
+one**. This is the only migration we get; retrofitting a path shape later means
+doing it all again.
 
 ```
-/<slug>/            article                    ← R1, flat, as in Ghost
-/tag/<tag>/         tag                        ← already exists
-/author/<name>/     author                     ← already exists
-/page/<n>/          pagination                 ← already exists
-/aboutme/           about                      ← already exists, address preserved
-/projects/          projects                   ← new, R8
-/search/            search                     ← new
-/rss/               main feed                  ← R2
+/                   index
+/posts/<slug>/      article
+/tag/<tag>/         tag
+/about/             about
+/projects/          projects
+/search/            search
+/rss/               main feed          ← R2, original address, never redirected
+/llms.txt           site map for agents
+/index.json         catalogue
 /webmentions/…      as-is
 ```
 
-The ai-first layer (§6) adds `/llms.txt`, `/llms-full.txt`, `/<slug>.md`,
-`/<slug>.json`, `/index.json`, `/feeds/<tag>.xml`.
+Freeing the root of *articles* is the point: Ghost put them at bare root, so
+sections competed with slugs. `/posts/` solves that. New top-level pages now
+cost nothing.
 
-**R1 is a CI test:** a fixed list of existing addresses, each of which must
-return 200 against the built site. The build fails, not the traffic.
+`/aboutme/` gets no special treatment: it is content, so it moves to `/about/`
+and redirects like everything else. "It is already indexed" is true of every
+address here, and every address is being redirected anyway.
+
+### Language: the default locale is not prefixed
+
+Astro's recommendation, and it is the right one here:
+`prefixDefaultLocale: false` — the default language has no prefix (`/about/`),
+additional languages do (`/en/about/`).
+
+An earlier draft of this document argued for `/ru/` from day one, on the
+grounds that adding a language segment later would force a second migration.
+**That argument was wrong.** With the default locale unprefixed there is no
+second migration either: Russian keeps its addresses forever and English, if it
+ever appears, arrives at `/en/` without touching a single existing URL.
+
+What is left is genuine upside: shorter addresses for the language that carries
+effectively all the traffic, and the framework's happy path instead of custom
+routing.
+
+`lang` stays authoritative in the frontmatter, `hreflang` is emitted per page
+with `x-default` pointing at the unprefixed tree, and `/index.json` and
+`llms.txt` carry the language of each entry.
+
+### Redirect rules
+
+**Astro's `redirects` config is not used for the migration.** The docs are
+explicit: `astro build` "will output HTML files with the meta refresh tag by
+default", and "if building to HTML files the status code is not used by the
+server". Only supported adapters write real host configuration — and those
+exist for platforms ruled out on regional reachability (§7).
+
+So the redirect map is a **data file**, and a build step emits nginx
+configuration from it. One source of truth, real status codes, and no dead
+meta-refresh pages littering the output. This is another reason the nginx
+deployment earns its keep.
+
+- **301, never 302.** A permanent redirect passes ranking signal; a temporary
+  one does not.
+- **One hop.** Old address → final address, directly. Never through an
+  intermediate. Chains lose signal and are the usual way this goes wrong.
+- **Every old address is covered.** The map is exhaustive and pinned in a test.
+- **`/rss/` is the only exemption**, and for a mechanical reason rather than a
+  sentimental one: feed readers deal with moved feeds unreliably and some drop
+  the subscription silently. It keeps serving at its original address.
+
+### Slugs
+
+Since every address is being redirected anyway, slugs are rewritten now — this
+is free at migration time and expensive at any other. New slugs are short,
+lowercase, and readable; they name the subject rather than transliterating a
+headline.
+
+### The CI test
+
+Two assertions per old address, not one:
+
+1. the old address returns **301**, with `Location` pointing at the new address
+2. the new address returns **200**
+
+Plus: no redirect target is itself a redirect. The build fails, not the traffic.
+
+The ai-first layer (§6) adds `/llms.txt`, `/llms-full.txt`, `/posts/<slug>.md`,
+`/posts/<slug>.json`, `/index.json`, `/feeds/<tag>.xml`.
 
 ## 6. The ai-first layer
 
@@ -382,7 +454,7 @@ Inside the content repository, CI still enforces:
 
 - the agent writes `content/**` and nothing else
 - frontmatter validates against the schema
-- every existing address is still present (R1)
+- every old address still resolves through the redirect map (R1)
 - the R3–R8 elements are in place
 - `status` was not flipped to `published` on a file the agent did not author
 
@@ -406,8 +478,8 @@ the move.
 **1a. Engine and migration.** Astro, frontmatter schema, existing articles moved
 with addresses and `/rss/` preserved, design system (§12), deploy.
 
-**1b. Pages and contact surface.** "About" with contacts (address `/aboutme/`
-preserved), "Projects", author block at the end of articles, GitHub links,
+**1b. Pages and contact surface.** "About" with contacts at `/about/`
+(`/aboutme/` 301s to it), "Projects", author block at the end of articles, GitHub links,
 Telegram/VK sharing, subscription, per-topic feeds.
 
 **1c. Search for humans.** Pagefind — a static index, no server, good at exact
@@ -418,8 +490,9 @@ tool names.
 `Vary: Accept`, the `Link` header on every response, the structured core as the
 first block of an article.
 
-*Done when:* every existing address returns 200, `/rss/` is alive, the build
-emits all three outputs, and `curl -H "Accept: text/markdown"` returns markdown.
+*Done when:* every old address 301s in one hop to a new address that returns
+200, `/rss/` still serves at its original address, the build emits all three
+outputs, and `curl -H "Accept: text/markdown"` returns markdown.
 
 ### Phase 2 — the agent pipeline
 
