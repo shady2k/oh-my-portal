@@ -1,0 +1,180 @@
+@import './tokens.css';
+
+/*
+ * Base styles — design §12. Element selectors rather than utility classes:
+ * an article is markdown that nobody annotates, so the plain tags have to
+ * arrive already correct.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Never hide the anchor under nothing; there is no sticky header to clear. */
+  scroll-padding-block-start: var(--space-3);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--face-prose);
+  font-size: var(--step-0);
+  line-height: 1.65;
+  text-wrap: pretty;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* --- the reading column --- */
+
+.column {
+  inline-size: min(100% - 2 * var(--space-3), var(--measure));
+  margin-inline: auto;
+}
+
+/* --- utility text: everything that is not prose --- */
+
+.utility {
+  font-family: var(--face-utility);
+  font-size: var(--step--1);
+  letter-spacing: 0.01em;
+  color: var(--ink-quiet);
+}
+
+/*
+ * Utility-style field labels instead of decorative subheadings: the label says
+ * what the value is, and gets out of the way.
+ */
+.field-label {
+  font-family: var(--face-utility);
+  font-size: var(--step--1);
+  text-transform: lowercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-quiet);
+}
+
+/* --- headings carry a coloured highlight, not a rule or a size jump alone --- */
+
+h1,
+h2,
+h3 {
+  font-family: var(--face-prose);
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+  margin-block: var(--space-4) var(--space-2);
+}
+
+h1 {
+  font-size: var(--step-3);
+}
+h2 {
+  font-size: var(--step-1);
+}
+h3 {
+  font-size: var(--step-0);
+}
+
+/*
+ * The highlight sits behind the words, not behind the line box — a background
+ * on the block would paint the empty half of a short heading too.
+ */
+:is(h1, h2, h3).highlight > span,
+.highlight > :is(h1, h2, h3) > span {
+  background: linear-gradient(var(--highlight), var(--highlight));
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding-inline: 0.2em;
+}
+
+/* --- links: underlined, because colour alone is not a signal here --- */
+
+a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rule);
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration-color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* --- prose --- */
+
+p {
+  margin-block: 0 var(--space-3);
+}
+
+blockquote {
+  margin-inline: 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--rule);
+  color: var(--ink-quiet);
+  font-style: italic;
+}
+
+code {
+  font-family: var(--face-utility);
+  font-size: 0.9em;
+  background: var(--paper-sunk);
+  padding: 0.1em 0.3em;
+}
+
+pre {
+  font-family: var(--face-utility);
+  font-size: var(--step--1);
+  background: var(--paper-sunk);
+  padding: var(--space-3);
+  /* Long commands scroll rather than widening the page. */
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+hr {
+  border: 0;
+  border-block-start: 1px solid var(--rule);
+  margin-block: var(--space-4);
+}
+
+img {
+  max-inline-size: 100%;
+  height: auto;
+}
+
+ul,
+ol {
+  padding-inline-start: 1.2em;
+  margin-block: 0 var(--space-3);
+}
+
+li {
+  margin-block-end: var(--space-1);
+}
+
+table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+th,
+td {
+  text-align: start;
+  padding: var(--space-1) var(--space-2);
+  border-block-end: 1px solid var(--rule);
+}

@@ -10,11 +10,13 @@ import { frontmatter } from './schema/frontmatter.js';
  * is only the Astro binding.
  */
 const posts = defineCollection({
-  // The content repository supplies `content/`; this repository ships none of
-  // its own (design §2). An absent directory yields an empty collection.
   loader: glob({
     pattern: '**/*.md',
-    base: 'content/posts',
+    // The content repository mounts its own `content/posts`. This repository has
+    // none, so its own dev server and tests point at `examples/posts` instead —
+    // two deliberately synthetic articles that show the shape without the engine
+    // ever carrying an article of its own.
+    base: process.env.CONTENT_DIR ?? 'content/posts',
     // The frontmatter `slug` wins over the file path, so renaming a file is not
     // a URL change and the redirect map stays the only place addresses move.
     generateId: ({ data }) => String(data.slug),

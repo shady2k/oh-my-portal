@@ -1,0 +1,51 @@
+# nginx server block — a template, adapted per deployment.
+#
+# Unlike nginx/redirects.conf this file is NOT generated: it names hosts and
+# paths, which are deployment data and do not belong in the engine repository.
+# Copy it, fill in the two placeholders, and keep it with the deploy.
+#
+# What it has to get right, and why:
+#
+#   1. /rss/ serves the feed at its original address (R2). Astro writes the feed
+#      to rss/index.xml, because /rss/ is a directory address and not an .xml
+#      file; this block maps one onto the other and sets the feed content type,
+#      which `index` alone would not.
+#   2. Every old address 301s in one hop (R1) — nginx/redirects.conf, generated
+#      from migration/redirects.yaml by `npm run redirects`.
+#
+# Content negotiation on Accept (design §7, the `map` that serves the markdown
+# tree at the same addresses) is NOT here yet: it arrives with the ai-first
+# layer, together with the mandatory `Vary: Accept`. Adding negotiation without
+# that header is the most expensive mistake available in this design, so it is
+# added as one change, not in halves.
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name example.invalid;          # <- the site's host
+
+    root /srv/site/html;                  # <- where `astro build` output is deployed
+    index index.html;
+
+    # R1. Old addresses, one hop each, 301. Generated — never edit by hand.
+    include /etc/nginx/conf.d/redirects.conf;
+
+    # R2. The feed keeps the address it always had. `=` so it wins over the
+    # directory handling below, and an explicit type because the file on disk is
+    # index.xml while the address is a directory.
+    location = /rss/ {
+        default_type application/rss+xml;
+        try_files /rss/index.xml =404;
+    }
+
+    # Astro builds with `format: 'directory'` and `trailingSlash: 'always'`, so
+    # every route is a directory holding index.html.
+    location / {
+        try_files $uri $uri/ $uri/index.html =404;
+    }
+
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+    }
+}

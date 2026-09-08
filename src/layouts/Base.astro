@@ -1,0 +1,110 @@
+---
+import { getCollection } from 'astro:content';
+
+import '../styles/base.css';
+
+/**
+ * The page shell — design §5 (addresses and hreflang) and §12 (the status-line
+ * footer).
+ */
+interface Props {
+  title: string;
+  description: string;
+  /** Design §5: authoritative per page, and it drives hreflang. */
+  lang?: string;
+  /** Kept out of search for drafts and for the not-found page. */
+  noindex?: boolean;
+}
+
+const { title, description, lang = 'ru', noindex = false } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+/* Counted through the collection, so the shell never learns where content comes from. */
+const posts = (await getCollection('posts')).filter((p) => p.data.status === 'published').length;
+const built = new Date().toISOString().slice(0, 10);
+---
+
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    {/*
+      Design §5: the default locale is unprefixed, so x-default points at this
+      same tree. When an /en/ tree appears, it adds an entry here and nothing
+      about these addresses changes.
+    */}
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang="x-default" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title={title} href="/rss/" />
+  </head>
+  <body>
+    <a class="skip utility" href="#main">к содержанию</a>
+
+    <header class="column">
+      <nav class="nav utility" aria-label="основная навигация">
+        <a href="/">записи</a>
+        <a href="/about/">о себе</a>
+        <a href="/projects/">проекты</a>
+        <a href="/search/">поиск</a>
+      </nav>
+    </header>
+
+    <main id="main" class="column">
+      <slot />
+    </main>
+
+    {/* Design §12: the footer is a status line, not a sitemap. */}
+    <footer class="column">
+      <p class="status utility">
+        <span>ru</span>
+        <span aria-hidden="true">·</span>
+        <span>{posts} записи</span>
+        <span aria-hidden="true">·</span>
+        <span>сборка {built}</span>
+        <span aria-hidden="true">·</span>
+        <a href="/rss/">rss</a>
+      </p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    inset-inline-start: -100vw;
+  }
+
+  .skip:focus {
+    position: static;
+    display: inline-block;
+    padding: var(--space-2);
+  }
+
+  header,
+  footer {
+    padding-block: var(--space-3);
+  }
+
+  main {
+    padding-block-end: var(--space-5);
+  }
+
+  .nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding-block-start: var(--space-2);
+    border-block-start: 1px solid var(--rule);
+  }
+</style>

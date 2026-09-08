@@ -1,0 +1,52 @@
+/*
+ * Design tokens — design §12.
+ *
+ * Cream, monochrome, a great deal of whitespace. Colour appears in exactly two
+ * places: the highlight behind a heading and the pastel pills that label
+ * sections. Everything else is ink on paper, which is what makes those two
+ * places read as deliberate.
+ *
+ * There are no gradients, no shadows and no illustration slots on purpose:
+ * every one of them is a thing to maintain and a way for pages to drift apart.
+ */
+:root {
+  /* --- paper and ink --- */
+  --paper: #faf7f0;
+  --paper-sunk: #f3efe4;
+  --ink: #191714;
+  --ink-quiet: #6b6459;
+  --rule: #e2dccd;
+
+  /* --- the two places colour is allowed --- */
+  --highlight: #ffe9a8;
+  --pill-homelab: #dbe9dd;
+  --pill-pkms: #e5dced;
+  --pill-kubernetes: #d8e4ee;
+  --pill-security: #f0dcd8;
+  --pill-ai-agents: #e8e2d2;
+  --pill-blogging: #ecdfd2;
+  --pill-default: #e8e4da;
+
+  /*
+   * A text face for prose, monospace for utility text. Both are system stacks:
+   * a webfont would be one more request against a CDN whose reachability is
+   * exactly the constraint that ruled out half the hosting options (design §7),
+   * and Georgia's Cyrillic is better than most things we would ship ourselves.
+   */
+  --face-prose: Georgia, 'Noto Serif', 'Times New Roman', serif;
+  --face-utility: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  /* --- scale --- */
+  --measure: 34rem; /* the reading column; everything else is margin */
+  --step--1: 0.8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.375rem;
+  --step-2: 1.75rem;
+  --step-3: 2.25rem;
+
+  --space-1: 0.375rem;
+  --space-2: 0.75rem;
+  --space-3: 1.5rem;
+  --space-4: 3rem;
+  --space-5: 6rem;
+}

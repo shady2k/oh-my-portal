@@ -71,3 +71,8 @@ proxieddb/
 # Written by the beads-superpowers plugin as a `bd prime` safety net, and it
 # recreates itself. It describes bd, which is not this repository's tracker.
 PRIME.md
+
+# Per-machine marker of the local br version, written by br 1.1+. Same class as
+# .auto-import-issues.jsonl above: local state, and tracking it would make every
+# clone rewrite it. Untracked 2026-09-08.
+.local_version

@@ -1,0 +1,144 @@
+---
+import type { Frontmatter } from '../schema/frontmatter.ts';
+
+/**
+ * The article core — design §6.
+ *
+ * Rendered as the first block of the article, in the human version too: facts
+ * live in the frontmatter and the prose is commentary around them, so both
+ * versions are projections of one core and cannot drift. A human at 1 a.m.
+ * wants the versions and the commands before the essay as much as an agent does.
+ *
+ * Not every article has a core, and that is a normal state — the caller decides
+ * whether to render this at all.
+ */
+interface Props {
+  recipe: NonNullable<Frontmatter['recipe']>;
+}
+
+const { recipe } = Astro.props;
+const verified = recipe.verified_on.toISOString().slice(0, 10);
+---
+
+<section class="core" aria-label="структурное ядро статьи">
+  <dl>
+    <dt class="field-label">цель</dt>
+    <dd>{recipe.goal}</dd>
+
+    <dt class="field-label">проверено</dt>
+    <dd><time datetime={verified} class="utility">{verified}</time></dd>
+
+    {
+      recipe.stack?.length && (
+        <>
+          <dt class="field-label">стек</dt>
+          <dd>
+            <ul class="plain utility">
+              {recipe.stack.map((t) => (
+                <li>
+                  {t.name} {t.version}
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </>
+      )
+    }
+
+    {
+      recipe.steps?.length && (
+        <>
+          <dt class="field-label">шаги</dt>
+          <dd>
+            <ol class="steps">
+              {recipe.steps.map((s) => (
+                <li>
+                  <code>{s.cmd}</code>
+                  {s.note && <span class="note utility">{s.note}</span>}
+                </li>
+              ))}
+            </ol>
+          </dd>
+        </>
+      )
+    }
+
+    {
+      recipe.pitfalls?.length && (
+        <>
+          <dt class="field-label">грабли</dt>
+          <dd>
+            <ul class="plain">
+              {recipe.pitfalls.map((p) => (
+                <li>
+                  <b>{p.symptom}</b> — {p.cause}. <i>{p.fix}</i>
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </>
+      )
+    }
+
+    {
+      recipe.do_not?.length && (
+        <>
+          <dt class="field-label">не делать</dt>
+          <dd>
+            <ul class="plain">
+              {recipe.do_not.map((d) => (
+                <li>{d}</li>
+              ))}
+            </ul>
+          </dd>
+        </>
+      )
+    }
+  </dl>
+</section>
+
+<style>
+  /* Sunk paper rather than a card: no shadow, no border radius, no lift (§12). */
+  .core {
+    background: var(--paper-sunk);
+    padding: var(--space-3);
+    margin-block-end: var(--space-4);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: minmax(6rem, auto) 1fr;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+  }
+
+  dt {
+    padding-block-start: 0.28em; /* optical: mono cap-height against the prose face */
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .plain {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .steps {
+    margin: 0;
+    padding-inline-start: 1.2em;
+  }
+
+  .steps code {
+    display: block;
+    background: none;
+    padding: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .note {
+    display: block;
+  }
+</style>
