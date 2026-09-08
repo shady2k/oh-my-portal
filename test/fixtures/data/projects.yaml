@@ -1,0 +1,11 @@
+- slug: live-thing
+  name: Живой проект
+  summary: Проверяет активное состояние.
+  state: active
+  since: 2026-02-01
+  repo: https://github.com/example/live
+- slug: dead-thing
+  name: Мёртвый проект
+  summary: Проверяет, что архив уходит в конец.
+  state: archived
+  since: 2024-01-01

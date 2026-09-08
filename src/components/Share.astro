@@ -1,0 +1,49 @@
+---
+/**
+ * Sharing — R7.
+ *
+ * Telegram and VK, because the audience is Russian-speaking and the buttons the
+ * old site carried were useless to it. No Twitter, no Facebook, and no third
+ * party script: these are plain links, so nothing is loaded from anyone else and
+ * there is nothing to consent to.
+ */
+interface Props {
+  url: URL;
+  title: string;
+}
+
+const { url, title } = Astro.props;
+const href = url.href;
+
+const targets = [
+  {
+    label: 'telegram',
+    href: `https://t.me/share/url?url=${encodeURIComponent(href)}&text=${encodeURIComponent(title)}`,
+  },
+  {
+    label: 'vk',
+    href: `https://vk.com/share.php?url=${encodeURIComponent(href)}&title=${encodeURIComponent(title)}`,
+  },
+];
+---
+
+<p class="share utility" data-pagefind-ignore>
+  <span class="field-label">поделиться</span>
+  {
+    targets.map((target) => (
+      <a href={target.href} rel="noopener noreferrer nofollow" target="_blank">
+        {target.label}
+      </a>
+    ))
+  }
+</p>
+
+<style>
+  .share {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    align-items: baseline;
+    margin-block: var(--space-3) 0;
+  }
+</style>

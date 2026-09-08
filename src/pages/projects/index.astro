@@ -1,0 +1,119 @@
+---
+import { render } from 'astro:content';
+
+import Base from '../../layouts/Base.astro';
+import { getPage } from '../../posts.ts';
+import { listProjects, STATE_LABEL } from '../../site.ts';
+
+/**
+ * `/projects/` — R8, and §12's "a register with the state of each project, not
+ * a link list".
+ *
+ * The state is the whole point. A list of repository links says nothing a
+ * profile page would not, and it goes stale without a reader being able to tell.
+ * A register that says `в архиве` since a date is still true a year later.
+ */
+const projects = await listProjects();
+const page = await getPage('projects');
+const Content = page ? (await render(page)).Content : null;
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base
+  title={page?.data.title ?? 'Проекты'}
+  description={page?.data.summary ?? 'Реестр проектов с состоянием каждого.'}
+>
+  <article data-pagefind-body>
+    <h1 class="highlight"><span>{page?.data.title ?? 'Проекты'}</span></h1>
+
+    {Content && <div class="prose"><Content /></div>}
+
+    <ul class="register">
+      {
+        projects.map((project) => (
+          <li>
+            <p class="head">
+              <span class="name">{project.name}</span>
+              <span class={`state state-${project.state}`}>{STATE_LABEL[project.state]}</span>
+              {project.since && (
+                <time class="utility" datetime={iso(project.since)}>
+                  с {iso(project.since)}
+                </time>
+              )}
+            </p>
+            <p class="summary">{project.summary}</p>
+            <p class="links utility" data-pagefind-ignore>
+              {project.repo && <a href={project.repo}>исходники</a>}
+              {project.site && <a href={project.site}>сайт</a>}
+            </p>
+          </li>
+        ))
+      }
+    </ul>
+
+    {projects.length === 0 && <p class="utility">Реестр пуст: контент-репозиторий не подключён.</p>}
+  </article>
+</Base>
+
+<style>
+  .register {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .register > li + li {
+    margin-block-start: var(--space-3);
+    padding-block-start: var(--space-3);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin: 0;
+  }
+
+  .name {
+    font-weight: 600;
+  }
+
+  /* A pill, like a section label — the state is the register's vocabulary. */
+  .state {
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    background: var(--pill-default);
+  }
+
+  .state-active {
+    background: var(--pill-homelab);
+  }
+  .state-maintained {
+    background: var(--pill-kubernetes);
+  }
+  .state-experiment {
+    background: var(--pill-pkms);
+  }
+  .state-paused {
+    background: var(--pill-blogging);
+  }
+  .state-archived {
+    background: var(--paper-sunk);
+    color: var(--ink-quiet);
+  }
+
+  .summary {
+    margin-block: var(--space-1);
+  }
+
+  .links {
+    display: flex;
+    gap: var(--space-3);
+    margin: 0;
+  }
+</style>

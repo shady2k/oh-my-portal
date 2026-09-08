@@ -89,6 +89,43 @@ content/
   data/projects.yaml     project cards
 ```
 
+A `kind: page` entry has its own address — `about` renders at `/about/`, not at
+`/posts/about/` — so pages appear in neither the listings nor the feeds. That is
+the only thing separating them from articles; they are still one type.
+
+The engine finds this tree through `CONTENT_DIR` and `DATA_DIR`. It ships neither:
+`examples/posts` and `examples/data` hold obviously synthetic values so the engine
+builds on its own and so the shape is visible to someone reading the repository.
+
+### The site's own data
+
+Both files are validated by the same kind of schema as the frontmatter
+(`src/schema/site.ts`), and are just as strict.
+
+```yaml
+# data/author.yaml
+name:     "..."
+bio:      "One or two sentences — ends every article (R5)"
+contact:  { label: "...", href: "..." }   # exactly one: R3
+links:    [ { label: github, href: "..." } ]   # R4
+subscribe_action: /subscribe/             # where the form posts (R6); optional
+
+# data/projects.yaml — a register, not a link list (§12)
+- slug:    some-project
+  name:    "..."
+  summary: "..."
+  state:   active | maintained | experiment | paused | archived
+  since:   2026-09-01     # when that state was last true
+  repo:    https://...    # optional
+  site:    https://...    # optional
+```
+
+`contact` is one entry rather than a list on purpose: six ways to reach someone
+is a way of not being reachable. `state` is what makes the projects page worth
+having — a list of repository links says nothing a profile page would not, and it
+goes stale without a reader being able to tell, while "archived since 2024" is
+still true a year later.
+
 ### Frontmatter
 
 Required:

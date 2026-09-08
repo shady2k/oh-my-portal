@@ -1,0 +1,60 @@
+---
+import { getAuthor } from '../site.ts';
+
+/**
+ * The author block — R5, at the end of every article.
+ *
+ * Design §3 puts it there for a reason worth keeping in mind while editing it:
+ * the end of an article is the moment of peak reader interest, and today that
+ * moment leads nowhere. So this carries the two things R3 and R4 ask for — a way
+ * to make contact and the links — rather than a decorative byline.
+ *
+ * All of it comes from the content repository's `data/author.yaml`. Absent data
+ * renders nothing rather than a placeholder.
+ */
+const author = await getAuthor();
+---
+
+{
+  author && (
+    <aside class="author" data-pagefind-ignore>
+      <p class="field-label">автор</p>
+      <p class="name">{author.name}</p>
+      <p class="bio">{author.bio}</p>
+      <p class="links utility">
+        <a href={author.contact.href}>{author.contact.label}</a>
+        {author.links.map((link) => (
+          <a href={link.href} rel="me">
+            {link.label}
+          </a>
+        ))}
+      </p>
+    </aside>
+  )
+}
+
+<style>
+  .author {
+    margin-block-start: var(--space-4);
+    padding-block-start: var(--space-3);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .name {
+    font-weight: 600;
+  }
+
+  .bio {
+    margin-block: var(--space-1) var(--space-2);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+</style>

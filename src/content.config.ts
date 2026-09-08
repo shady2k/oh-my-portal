@@ -1,7 +1,10 @@
+import { parse as parseYaml } from 'yaml';
+
 import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { file, glob } from 'astro/loaders';
 
 import { frontmatter } from './schema/frontmatter.js';
+import { author, project } from './schema/site.js';
 
 /**
  * The schema itself lives in `src/schema/frontmatter.ts` and is plain Zod, so
@@ -24,4 +27,28 @@ const posts = defineCollection({
   schema: frontmatter,
 });
 
-export const collections = { posts };
+/**
+ * `data/author.yaml` and `data/projects.yaml` (§4). Same story as `posts`: the
+ * content repository supplies them, `DATA_DIR` says where, and `examples/data`
+ * is what this repository builds against.
+ */
+const dataDir = process.env.DATA_DIR ?? 'content/data';
+
+const site = defineCollection({
+  loader: file(`${dataDir}/author.yaml`, { parser: (text) => ({ author: parseYaml(text) }) }),
+  schema: author,
+});
+
+const projects = defineCollection({
+  // Keyed by slug so the entry id comes from the key and no synthetic `id`
+  // field has to be added to the data, which the strict schema would reject.
+  loader: file(`${dataDir}/projects.yaml`, {
+    parser: (text) =>
+      Object.fromEntries(
+        (parseYaml(text) as { slug: string }[]).map((entry) => [entry.slug, entry]),
+      ),
+  }),
+  schema: project,
+});
+
+export const collections = { posts, site, projects };

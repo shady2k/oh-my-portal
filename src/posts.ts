@@ -16,10 +16,31 @@ export const PREVIEW = process.env.PREVIEW === '1';
 /** Newest first. Every listing and every feed sorts the same way. */
 const byDateDesc = (a: Post, b: Post) => b.data.date.getTime() - a.data.date.getTime();
 
-/** Every post this build is allowed to publish, newest first. */
+/** Whether an entry may be shown at all in this build. */
+const visible = ({ data }: Post) => PREVIEW || data.status === 'published';
+
+/**
+ * Every article this build may publish, newest first.
+ *
+ * `kind: page` is excluded: pages are one type with the articles (§4) but they
+ * have their own addresses — `/about/`, not `/posts/about/` — so they belong in
+ * neither the listings nor the feeds.
+ */
 export async function listPosts(): Promise<Post[]> {
-  const posts = await getCollection('posts', ({ data }) => PREVIEW || data.status === 'published');
+  const posts = await getCollection('posts', (entry) => visible(entry) && entry.data.kind !== 'page');
   return posts.sort(byDateDesc);
+}
+
+/**
+ * A standalone page by slug — the prose for `/about/` and `/projects/`.
+ *
+ * It is content, so it lives in the content repository like everything else and
+ * this repository only knows the address it renders at. Absent is a normal
+ * state: the page still builds from the site data alone.
+ */
+export async function getPage(slug: string): Promise<Post | undefined> {
+  const pages = await getCollection('posts', (entry) => visible(entry) && entry.data.kind === 'page');
+  return pages.find((page) => page.id === slug);
 }
 
 /** The tags actually in use, with their counts, most-used first then alphabetical. */

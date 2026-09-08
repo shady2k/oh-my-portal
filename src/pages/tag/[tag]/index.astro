@@ -23,7 +23,11 @@ const { tag, posts } = Astro.props;
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
-<Base title={`Тема: ${tag}`} description={`Записи по теме ${tag}.`}>
+<Base
+  title={`Тема: ${tag}`}
+  description={`Записи по теме ${tag}.`}
+  feed={`/feeds/${tag}.xml`}
+>
   <h1 class="head">
     <span class="field-label">тема</span>
     <Pill tag={tag} />
@@ -44,6 +48,10 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       ))
     }
   </ul>
+
+  <p class="utility feed">
+    <a href={`/feeds/${tag}.xml`}>подписаться только на эту тему</a>
+  </p>
 </Base>
 
 <style>

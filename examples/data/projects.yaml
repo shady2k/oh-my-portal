@@ -1,0 +1,14 @@
+# Synthetic project register (design §12: a register with the state of each
+# project, not a link list). The state is the point — a list of links says
+# nothing a profile page would not, and goes stale invisibly.
+- slug: example-engine
+  name: Пример движка
+  summary: Синтетическая запись, чтобы страница проектов собиралась.
+  state: active
+  since: 2026-09-01
+  repo: https://github.com/example/example
+- slug: example-archived
+  name: Пример архивного
+  summary: Показывает, как выглядит проект, который больше не развивается.
+  state: archived
+  since: 2025-04-10

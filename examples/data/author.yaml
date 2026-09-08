@@ -1,0 +1,16 @@
+# Synthetic. This repository carries the engine and no site of its own (design
+# §2), so nothing here is anyone's real contact. The content repository supplies
+# the real file at the same path.
+name: Пример Автора
+bio: >-
+  Синтетический автор: существует, чтобы движок собирался без
+  контент-репозитория и чтобы была видна форма данных.
+contact:
+  label: почта
+  href: mailto:author@example.invalid
+links:
+  - label: github
+    href: https://github.com/example/example
+  - label: telegram
+    href: https://t.me/example
+subscribe_action: /subscribe/

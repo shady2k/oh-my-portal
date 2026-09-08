@@ -113,7 +113,7 @@ export function catalogueMarkdown(posts: Post[], site: URL): string {
 }
 
 /** `/llms.txt` — the site map. Cheap, and it is what the Link header advertises. */
-export function llmsTxt(posts: Post[], site: URL): string {
+export function llmsTxt(posts: Post[], site: URL, tags: string[] = []): string {
   const lines = [
     '# Записи',
     '',
@@ -133,7 +133,10 @@ export function llmsTxt(posts: Post[], site: URL): string {
   lines.push('', '## Прочее', '');
   lines.push(`- [Каталог JSON](${absolute(site, '/index.json')}): все записи с метаданными`);
   lines.push(`- [Полный текст](${absolute(site, '/llms-full.txt')}): все записи целиком`);
-  lines.push(`- [RSS](${absolute(site, '/rss/')}): подписка`);
+  lines.push(`- [RSS](${absolute(site, '/rss/')}): подписка на все записи`);
+  for (const tag of tags) {
+    lines.push(`- [RSS: ${tag}](${absolute(site, `/feeds/${tag}.xml`)}): подписка только на эту тему`);
+  }
   return lines.join('\n') + '\n';
 }
 
@@ -148,4 +151,47 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 /** Dates inside the core are Date objects after parsing; YAML and JSON both want the string. */
 function serialiseRecipe(recipe: NonNullable<Post['data']['recipe']>) {
   return { ...recipe, verified_on: iso(recipe.verified_on) };
+}
+
+/** `/about/index.md` — the page prose, if any, plus the contacts that R3 asks for. */
+export function aboutMarkdown(
+  author: { name: string; bio: string; contact: { label: string; href: string }; links: { label: string; href: string }[] } | undefined,
+  body: string | undefined,
+): string {
+  const lines = ['# О себе', ''];
+  if (author) lines.push(author.bio, '');
+  if (body) lines.push(body.trim(), '');
+  if (author) {
+    lines.push('## Связаться', '');
+    lines.push(`- ${author.contact.label}: ${author.contact.href}`);
+    for (const link of author.links) lines.push(`- ${link.label}: ${link.href}`);
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+/**
+ * `/projects/index.md` — the register, state and all.
+ *
+ * The state belongs in the machine version as much as in the human one: an
+ * agent summarising someone's work should be able to say a project is archived
+ * rather than inferring liveness from a commit date.
+ */
+export function projectsMarkdown(
+  projects: { name: string; slug: string; summary: string; state: string; since?: Date; repo?: string; site?: string }[],
+  label: Record<string, string>,
+  body?: string,
+): string {
+  const lines = ['# Проекты', ''];
+  if (body) lines.push(body.trim(), '');
+  for (const project of projects) {
+    lines.push(`## ${project.name}`, '');
+    lines.push(project.summary, '');
+    lines.push(`- состояние: ${label[project.state] ?? project.state} (\`${project.state}\`)`);
+    if (project.since) lines.push(`- с: ${iso(project.since)}`);
+    if (project.repo) lines.push(`- исходники: ${project.repo}`);
+    if (project.site) lines.push(`- сайт: ${project.site}`);
+    lines.push('');
+  }
+  return lines.join('\n');
 }

@@ -1,0 +1,110 @@
+---
+import { render } from 'astro:content';
+
+import Subscribe from '../../components/Subscribe.astro';
+import Base from '../../layouts/Base.astro';
+import { getPage } from '../../posts.ts';
+import { getAuthor } from '../../site.ts';
+
+/**
+ * `/about/` — R8, and the address `/aboutme/` 301s to (§5).
+ *
+ * The prose is a content entry with `kind: page` and slug `about`, so it lives
+ * in the content repository like everything else; this repository knows only the
+ * address it renders at. Without one the page still stands on the author data.
+ *
+ * §12 leaves the *presentation* of this page open on purpose — rendering it as
+ * our own soul file, with constitution and invariants, is a proposal and a
+ * matter of the maintainer's voice. The structure here does not foreclose it:
+ * the prose comes from content, so that decision is made by writing, not by
+ * changing this file.
+ */
+const author = await getAuthor();
+const page = await getPage('about');
+const Content = page ? (await render(page)).Content : null;
+---
+
+<Base
+  title={page?.data.title ?? 'О себе'}
+  description={page?.data.summary ?? author?.bio ?? 'О себе и о том, как связаться.'}
+>
+  <article data-pagefind-body>
+    <h1 class="highlight"><span>{page?.data.title ?? 'О себе'}</span></h1>
+
+    {
+      author && (
+        <>
+          {/* A page about someone should say who. The heading is the page's name,
+              not the person's — those are different things. */}
+          <p class="name">{author.name}</p>
+          <p class="bio">{author.bio}</p>
+        </>
+      )
+    }
+
+    {Content && <div class="prose"><Content /></div>}
+
+    {/* The labels are furniture, like the article's field labels: nobody
+        searches for them, and they run together in the extracted text. */}
+    {
+      author && (
+        <dl class="contacts" data-pagefind-ignore>
+          <dt class="field-label">связаться</dt>
+          <dd>
+            <a href={author.contact.href}>{author.contact.label}</a>
+          </dd>
+          {author.links.length > 0 && (
+            <>
+              <dt class="field-label">ещё</dt>
+              <dd class="links">
+                {author.links.map((link) => (
+                  <a href={link.href} rel="me">
+                    {link.label}
+                  </a>
+                ))}
+              </dd>
+            </>
+          )}
+        </dl>
+      )
+    }
+  </article>
+
+  <Subscribe />
+</Base>
+
+<style>
+  .name {
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    letter-spacing: 0.06em;
+    color: var(--ink-quiet);
+    margin-block: calc(-1 * var(--space-2)) var(--space-3);
+  }
+
+  .bio {
+    font-size: var(--step-1);
+    line-height: 1.45;
+  }
+
+  .contacts {
+    display: grid;
+    grid-template-columns: minmax(6rem, auto) 1fr;
+    gap: var(--space-1) var(--space-3);
+    margin-block-start: var(--space-4);
+  }
+
+  .contacts dt {
+    padding-block-start: 0.28em;
+  }
+
+  .contacts dd {
+    margin: 0;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+</style>

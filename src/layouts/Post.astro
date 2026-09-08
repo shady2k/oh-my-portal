@@ -1,8 +1,11 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 
+import Author from '../components/Author.astro';
 import Core from '../components/Core.astro';
 import Pill from '../components/Pill.astro';
+import Share from '../components/Share.astro';
+import Subscribe from '../components/Subscribe.astro';
 import Base from './Base.astro';
 
 interface Props {
@@ -106,7 +109,12 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
         </section>
       )
     }
+    <Share url={new URL(Astro.url.pathname, Astro.site)} title={data.title} />
   </article>
+
+  {/* R5, R4, R3: the end of an article is where reader interest peaks. */}
+  <Author />
+  <Subscribe />
 </Base>
 
 <style>

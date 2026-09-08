@@ -14,7 +14,7 @@ import { extname, join, resolve } from 'node:path';
 export function build(env: Record<string, string>, out: string) {
   rmSync(out, { recursive: true, force: true });
   const options = {
-    env: { ...process.env, CONTENT_DIR: 'test/fixtures/posts', ...env },
+    env: { ...process.env, CONTENT_DIR: 'test/fixtures/posts', DATA_DIR: 'test/fixtures/data', ...env },
     stdio: 'pipe' as const,
   };
   execFileSync('npx', ['astro', 'build', '--outDir', out], options);

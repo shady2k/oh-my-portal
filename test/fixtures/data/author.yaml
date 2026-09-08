@@ -1,0 +1,9 @@
+name: Тестовый Автор
+bio: Строка для проверки авторского блока.
+contact:
+  label: почта
+  href: mailto:test@example.invalid
+links:
+  - label: github
+    href: https://github.com/example/test
+subscribe_action: /subscribe/

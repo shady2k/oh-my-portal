@@ -49,15 +49,22 @@ describe('what the index must not contain', () => {
     expect(await slugs('draft-example')).toHaveLength(0);
   });
 
-  it('indexes articles only, not listings or the search page itself', async () => {
+  it('indexes what someone reads, not the listings and not the search page', async () => {
     const entry = JSON.parse(readFileSync(`${OUT}/pagefind/pagefind-entry.json`, 'utf8'));
-    // One published fixture article. Index, tag pages and /search/ carry no
-    // data-pagefind-body, so Pagefind excludes them.
-    expect(entry.languages.ru.page_count).toBe(1);
+    // One published fixture article, /about/ and /projects/. Those two are
+    // indexed on purpose: someone searching a project's name should land on the
+    // register. The index page, the tag pages and /search/ carry no
+    // data-pagefind-body, so Pagefind leaves them out.
+    expect(entry.languages.ru.page_count).toBe(3);
+  });
+
+  it('finds a project by name, which is why /projects/ is indexed at all', async () => {
+    expect(await slugs('живой')).toContain('/projects/');
   });
 
   it('leaves out the utility field labels', async () => {
-    expect(await slugs('обновлено')).toHaveLength(0);
+    // `связаться` is a label on /about/, not something anyone would search for.
+    expect(await slugs('связаться')).toHaveLength(0);
   });
 });
 
