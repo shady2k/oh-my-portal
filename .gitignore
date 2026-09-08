@@ -1,0 +1,14 @@
+# --- br (beads_rust) ---
+# The database is local; the git-tracked source of truth is .beads/issues.jsonl.
+# Exact artifact patterns live in .beads/.gitignore
+*.db
+.beads-credential-key
+
+# --- repowise (local codebase index) ---
+# Grows to hundreds of megabytes, and .repowise/.env holds an API key.
+.repowise/
+
+# --- build ---
+node_modules/
+dist/
+.astro/
