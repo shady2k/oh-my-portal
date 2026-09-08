@@ -115,6 +115,23 @@ lists.** `br` is the tracker for all work, including your own checklists.
 | `deja` | recall across past agent sessions | before debugging an error or reimplementing anything |
 | `repowise` | codebase docs and graph | **once there is code** — the repo is documentation only right now, there is nothing to index |
 
+## Running the site locally
+
+This repository has no articles of its own (design §2), so the scripts point at
+`examples/`:
+
+```bash
+npm run dev        # dev server, no Pagefind index — /search/ says so
+npm run preview    # serves a real build: search works, twins work
+npm run verify     # astro check + vitest — run before handing off
+```
+
+Both servers bind to **`127.0.0.1`**, not `localhost`. Node resolves `localhost`
+through the system resolver, and where that answers `::1` first the server binds
+to the IPv6 loopback alone — `http://127.0.0.1:4321` is then refused while the
+printed URL still says `localhost` and looks fine. `HOST=0.0.0.0` exposes it to
+the network, `PORT=` moves it.
+
 ## Git
 
 Commits and pushes **only when explicitly asked**. At handoff, report changed
