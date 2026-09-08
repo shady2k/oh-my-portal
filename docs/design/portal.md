@@ -1,6 +1,6 @@
 # oh-my-portal — engine design
 
-A publishing engine for `shady2k.ru`, replacing Ghost. Two goals: make an
+A publishing engine for a personal site, replacing Ghost. Two goals: make an
 **agent publishing pipeline easy to build**, and ship an **ai-first site for the
 public**.
 
@@ -101,7 +101,8 @@ kind:     article
 status:   draft | published
 author:   human | being        # see §8
 summary:  "One sentence — feeds llms.txt, feeds, and cards"
-tags:     [ai, agents]
+tags:     [ai, agents]     # may be empty: a tag earns its place by grouping
+lang:     ru               # authoritative for hreflang, llms.txt, /index.json
 ```
 
 Optional, but what makes the ai-first layer possible:
@@ -109,7 +110,6 @@ Optional, but what makes the ai-first layer possible:
 ```yaml
 aliases:  [/old-address/]      # URL preservation on rename
 updated:  2026-08-14
-lang:     ru
 tools:                          # what the article covers
   - name: some-tool
     version: "1.5.9"
@@ -119,7 +119,13 @@ related:  [other-slug]
 
 The schema is a Zod schema in Astro Content Collections, **validated at build
 time**. An agent that drops a file with bad frontmatter breaks the build, not
-the site.
+the site. It is a `strictObject`: an unknown key fails too, so an invented field
+is caught rather than silently ignored.
+
+It lives in `src/schema/frontmatter.ts` as plain Zod, and `src/content.config.ts`
+is only the Astro binding. That split is what lets the content repository's CI
+checks (§9) and the agent tooling (§10, 1d) import the same schema without
+booting Astro — one definition, three consumers.
 
 ### Drafts
 
@@ -195,6 +201,13 @@ So the redirect map is a **data file**, and a build step emits nginx
 configuration from it. One source of truth, real status codes, and no dead
 meta-refresh pages littering the output. This is another reason the nginx
 deployment earns its keep.
+
+`migration/redirects.yaml` is the map; `scripts/gen-redirects.ts` renders it to
+`nginx/redirects.conf`, which is **committed on purpose** — a diff on it is the
+review of a change to production routing. `npm test` fails if it is stale. The
+output is exact-match `location =` blocks rather than a `map` plus `if`, and
+each old address is emitted in both its slashed and unslashed form so a link
+that lost its trailing slash still arrives in one hop.
 
 - **301, never 302.** A permanent redirect passes ranking signal; a temporary
   one does not.

@@ -1,6 +1,6 @@
 # Project Instructions for AI Agents
 
-A publishing engine for `shady2k.ru`, replacing Ghost.
+A publishing engine for a personal site, replacing Ghost.
 Design: [`docs/design/portal.md`](docs/design/portal.md).
 
 **This repository is public.** Never commit personal data — real names, contact
