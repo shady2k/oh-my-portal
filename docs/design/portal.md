@@ -692,6 +692,14 @@ with system fallbacks and `font-display: swap`. The eight WOFF2 assets total
 Other styles load only when used. Sources, versions and licenses are recorded in
 [`src/assets/fonts/README.md`](../../src/assets/fonts/README.md).
 
+Homepage internal navigation uses plain underlined links; the downward arrow is
+reserved for the jump to the journal. Illustration enlargement has a small
+magnifier, a zoom cursor and a linked caption that responds to image hover/focus.
+The experiment summary and observation both use 18px text, with the observation
+in dark ink. The RSS invitation is an 18px semibold link with the short explanation
+"Новые записи через RSS." Keyboard focus keeps the shared visible outline, and
+the experiment heading underlines on focus as well as hover.
+
 ### Previous direction (historical rationale)
 
 **One loud object, and a quiet page under it.**

@@ -20,7 +20,7 @@ const { revision, href, title, author = 'human' } = Astro.props;
     </div>
   </div>
   <p class="reason"><span>Что изменило мнение.</span> {revision.reason}</p>
-  {href && <a class="source" href={href}>{title ?? 'Прочитать исходную запись'} ↗</a>}
+  {href && <a class="source" href={href}>{title ?? 'Прочитать исходную запись'}</a>}
 </section>
 <style>
   .revision { padding-block: 0.75rem 2rem; }

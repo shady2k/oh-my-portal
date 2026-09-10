@@ -52,7 +52,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
             {latest!.data.status === 'draft' && <span>черновик</span>}
         </p>}
         {project?.observation && <p class="observation"><span class="field-label">Последнее наблюдение</span>{project.observation}</p>}
-        <a class="read-link" href={project ? `/projects/#${project.slug}` : `/posts/${latest!.id}/`}>{project ? 'Как идёт эксперимент' : 'Читать запись'} <span aria-hidden="true">↗</span></a>
+        <a class="read-link" href={project ? `/projects/#${project.slug}` : `/posts/${latest!.id}/`}>{project ? 'Как идёт эксперимент' : 'Читать запись'}</a>
       </div>
       {project && hasArt && (
         <aside class="feature-art">
@@ -66,7 +66,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   <section id="journal" aria-labelledby="journal-title">
     <div class="journal-head">
       <h2 id="journal-title" class="field-label">Свежие записи</h2>
-      <a class="utility" href="/archive/">Весь журнал · {posts.length} ↗</a>
+      <a class="utility" href="/archive/">Весь журнал · {posts.length}</a>
     </div>
     <Listing posts={posts.slice(0, 3)} compact showSummary />
     {posts.length === 0 && <p class="empty">Ни одной записи: контент-репозиторий не подключён.</p>}
@@ -77,7 +77,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     <div><p class="field-label">Дальше — по интересам</p><div class="topics">{tags.map(({ tag, count }) => <Tag tag={tag} count={count} href={`/tag/${tag}/`} />)}</div></div>
     <div class="follow">
       <JournalSketch />
-      <div><a href="/rss/index.xml">Подписаться на журнал ↗</a><p>Новые записи — в вашей RSS-ленте.</p></div>
+      <div><a href="/rss/index.xml">Подписаться на журнал</a><p>Новые записи через RSS.</p></div>
     </div>
   </nav>
 
@@ -85,7 +85,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     <section class="resident">
       <span class="resident-mark" aria-hidden="true">✳</span>
       <div><p class="field-label">Журнал агента</p><h2>{being.data.title}</h2>
-      <p>{being.data.summary}</p><a href={`/posts/${being.id}/`}>Читать наблюдение ↗</a></div>
+      <p>{being.data.summary}</p><a href={`/posts/${being.id}/`}>Читать наблюдение</a></div>
     </section>
   )}
 </Base>
@@ -101,13 +101,14 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .intro-text { max-inline-size: 65rem; color: var(--ink-quiet); font-size: 1rem; margin: 0; }
   .journal-jump { justify-self: start; font-size: 0.875rem; padding-block: 0.25rem; }
   .journal-jump span { margin-inline-start: 0.5rem; }
-  .observation { font-size: 1rem; max-inline-size: 34rem; border-inline-start: 2px solid var(--accent); padding-inline-start: 1rem; margin-block: 1.5rem; }
+  .observation { font-size: 1.125rem; line-height: 1.55; max-inline-size: 34rem; border-inline-start: 2px solid var(--accent); padding-inline-start: 1rem; margin-block: 1.5rem; }
   .observation .field-label { display: block; color: var(--accent); font-size: 0.8125rem; margin-block-end: 0.5rem; }
   #journal { padding-block-end: 0; }
   .browse { display: flex; flex-wrap: wrap; gap: 1.75rem 3rem; justify-content: space-between; align-items: center; padding-block: 2.5rem 0; font-size: 0.9375rem; }
   .browse .topics { padding: 0; }
   .follow { display: flex; align-items: center; gap: 1rem; }
-  .follow p { font-size: 0.8125rem; color: var(--ink-quiet); margin: 0.375rem 0 0; }
+  .follow a { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+  .follow p { font-size: 0.875rem; color: var(--ink-quiet); margin: 0.375rem 0 0; }
   .feature { position: relative; display: grid; align-items: start; gap: clamp(2rem, 4vw, 4rem); padding-block: 1rem 1.75rem; margin-block: 0.25rem 0.75rem; }
   .feature-rule { position: absolute; inset-inline: 0; inset-block-end: 0; pointer-events: none; }
   .feature.has-art { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
@@ -118,10 +119,10 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .state-dot { inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--accent); align-self: center; margin-inline-end: 0.2rem; }
   .feature h2 { max-inline-size: 19ch; font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1.12; letter-spacing: -0.04em; margin: 0 0 1rem; }
   .feature h2 a { text-decoration: none; }
-  .feature h2 a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
+  .feature h2 a:hover, .feature h2 a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; }
   .feature-summary { color: var(--ink-quiet); max-inline-size: 33rem; font-size: 1.125rem; line-height: 1.55; margin: 0; }
   .feature-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-  .read-link { display: inline-flex; gap: 0.75rem; font-size: 1rem; margin-block-start: 0.5rem; }
+  .read-link { display: inline-block; font-size: 1rem; margin-block-start: 0.5rem; }
   .feature-art { min-inline-size: 0; max-inline-size: 25rem; inline-size: 100%; justify-self: end; }
   .sketch-note { border-inline-start: 1px solid var(--rule); padding-inline-start: 1rem; margin: 0.875rem 0 0; font-size: 0.9375rem; line-height: 1.45; }
   .sketch-note p { margin: 0; }

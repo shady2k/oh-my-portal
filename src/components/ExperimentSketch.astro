@@ -31,7 +31,10 @@ const nodes = [
       </div>
     </>}
     </div>
-    <figcaption class="art-hint"><a href={memoryStudy.src}>Рассмотреть набросок ↗</a></figcaption>
+    <figcaption class="art-hint"><a href={memoryStudy.src}>
+      <svg class="zoom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6.5" /><path d="m15 15 5 5 M7 10 h6 M10 7 v6" /></svg>
+      <span>Рассмотреть набросок</span>
+    </a></figcaption>
   </> : <>
   <svg viewBox="0 0 440 330" role="img" aria-label={sketch.caption}>
     <defs>
@@ -66,7 +69,7 @@ const nodes = [
   .compact.illustrated { padding-block-end: 0; }
   .compact .annotation { font-size: clamp(1.0625rem, 1.65vw, 1.3rem); }
   .art-plane { position: relative; }
-  .art-link { display: block; background: var(--paper); }
+  .art-link { display: block; background: var(--paper); cursor: zoom-in; }
   .art-link :global(img) { display: block; inline-size: 100%; block-size: auto; mix-blend-mode: multiply; }
   .annotation-arrows { position: absolute; inset: 0; inline-size: 100%; pointer-events: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round; }
   .annotation { position: absolute; font-family: 'Journal Hand', cursive; font-size: clamp(1.15rem, 2vw, 1.6rem); font-weight: 500; color: var(--accent); line-height: 1; max-inline-size: 46%; pointer-events: none; }
@@ -74,6 +77,9 @@ const nodes = [
   .growing { inset-block-start: 1%; inset-inline-start: 50%; transform: rotate(5deg); }
   .gap { inset-block-start: 91%; inset-inline-start: 20%; max-inline-size: 75%; transform: rotate(-4deg); }
   .art-hint { display: block; text-align: center; font-size: 0.8125rem; color: var(--ink-quiet); margin-block-start: 0.5rem; }
+  .art-hint a { display: inline-flex; align-items: center; gap: 0.375rem; padding-block: 0.25rem; }
+  .art-hint .zoom-icon { flex: 0 0 auto; inline-size: 1rem; block-size: 1rem; }
+  .art-hint a:hover, .art-hint a:focus-visible, .art-plane:hover + .art-hint a, .art-plane:focus-within + .art-hint a { color: var(--ink); text-decoration-color: var(--ink); }
   svg { display: block; inline-size: 100%; block-size: auto; overflow: visible; }
   .pencil { stroke: var(--ink); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
   .faint { opacity: 0.38; stroke-width: 0.8; }
