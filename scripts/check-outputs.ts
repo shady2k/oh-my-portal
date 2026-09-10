@@ -37,10 +37,39 @@ const required = (path: string, check?: (body: string) => string | null) => {
   if (complaint) problems.push(`${path}: ${complaint}`);
 };
 
+/*
+ * The placeholder host must not reach a published build.
+ *
+ * astro.config.mjs falls back to `https://example.com` when SITE_URL is unset,
+ * which is right for `astro build` in this repository — it carries no site of
+ * its own (§2) and has to stay buildable. It is catastrophic anywhere else: a
+ * build without the variable does not fail, it ships pages whose canonical,
+ * hreflang, sitemap, feeds and llms.txt all name somebody else's domain. A page
+ * that declares a foreign canonical is worse than one that declares none.
+ *
+ * Checked here rather than in the config for the same reason everything else in
+ * this file is: the artifact is the only place the mistake is visible, and this
+ * runs on the artifact. Set CHECK_PLACEHOLDER_HOST=allow for a local build that
+ * genuinely has no address yet.
+ */
+const PLACEHOLDER = 'https://example.com';
+if (process.env.CHECK_PLACEHOLDER_HOST !== 'allow') {
+  const home = read('index.html');
+  if (home?.includes(`rel="canonical" href="${PLACEHOLDER}`)) {
+    problems.push(
+      'canonical points at the https://example.com placeholder — SITE_URL was not set for this build',
+    );
+  }
+}
+
 required('llms.txt');
 required('llms-full.txt');
 required('index.html');
 required('index.md');
+required('robots.txt', (body) =>
+  body.includes('Sitemap: http') ? null : 'no absolute Sitemap: line',
+);
+required('sitemap.xml', (body) => (body.includes('<loc>') ? null : 'no <loc> entries'));
 required('index.json', (body) => {
   try {
     const parsed = JSON.parse(body);

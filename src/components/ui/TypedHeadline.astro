@@ -1,8 +1,9 @@
 ---
+import { displayHeading } from '../../typography.ts';
+
 interface Props { text: string; }
 const { text } = Astro.props;
-// A sentence's closing period is omitted in a display heading. Keep ? ! and ….
-const title = text.replace(/(?<!\.)\.$/u, '');
+const title = displayHeading(text);
 ---
 <h1 class="typed-headline" data-typed-headline>
   <span class="headline-reserve" aria-hidden="true">{title}<span class="cursor-space"></span></span>

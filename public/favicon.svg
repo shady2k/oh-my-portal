@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Полевой журнал">
+  <!--
+    A ruled page with one red mark on it — the journal reduced to the two things
+    it is made of (design §12). Written by hand rather than exported, so it is
+    repaired by hand, which is the same rule the rest of the drawn furniture on
+    this site follows.
+
+    Solid ground with paper-coloured rules, not the other way round: at 16px a
+    hairline outline disappears and a light favicon vanishes into a light tab
+    strip. The mass has to carry the shape, and the red has to sit on it.
+
+    Colours are the tokens from src/styles/tokens.css. An SVG cannot read a
+    custom property from the page that references it, so they are literals here;
+    tokens.css is the source and this is a copy that a redesign must remember.
+  -->
+  <style>
+    .ground { fill: #20201e }
+    .rule { fill: #fdfbf7 }
+    .mark { fill: #bf3025 }
+    @media (prefers-color-scheme: dark) {
+      .ground { fill: #e9e5dc }
+      .rule { fill: #1d1e1c }
+      .mark { fill: #bf3025 }
+    }
+  </style>
+  <rect class="ground" width="32" height="32" rx="5" />
+  <rect class="rule" x="7" y="9" width="18" height="2.6" rx="1.3" />
+  <rect class="rule" x="7" y="15" width="18" height="2.6" rx="1.3" />
+  <rect class="mark" x="7" y="21" width="11" height="2.6" rx="1.3" />
+</svg>

@@ -194,9 +194,16 @@ doing it all again.
 /search/            search
 /rss/               main feed          ← R2, original address, never redirected
 /llms.txt           site map for agents
+/sitemap.xml        site map for crawlers
+/robots.txt         crawler policy, and it points at both maps
 /index.json         catalogue
 /webmentions/…      as-is
 ```
+
+`/sitemap.xml` lists only what is indexable, so `/search/`, the 404 and
+`/posts/<slug>/integrity/` are absent — each of them already carries `noindex`,
+and submitting an address you asked not to have indexed is a contradiction a
+crawler resolves against the site.
 
 Freeing the root of *articles* is the point: Ghost put them at bare root, so
 sections competed with slugs. `/posts/` solves that. New top-level pages now
@@ -225,6 +232,32 @@ routing.
 `lang` stays authoritative in the frontmatter, `hreflang` is emitted per page
 with `x-default` pointing at the unprefixed tree, and `/index.json` and
 `llms.txt` carry the language of each entry.
+
+### The head states the same facts twice
+
+§6 gives an agent `llms.txt`, a markdown twin and `/index.json`. None of those
+is read by a search engine or by the thing that unfurls a link pasted into a
+chat window, so the head repeats the same facts in the two vocabularies those
+clients do read: Open Graph and Twitter card meta, and `schema.org` JSON-LD
+(`BlogPosting` on an article, `WebSite` plus `Person` on the index,
+`BreadcrumbList` on anything nested).
+
+Nothing there is a new fact. Every field comes from the frontmatter or from the
+site data, which is what keeps the three representations from disagreeing — and
+means a field that is absent stays absent rather than acquiring a placeholder.
+§8 is the sharp case: an article the inhabitant wrote carries no author in the
+machine-readable metadata at all, because the only name available to put there
+is the maintainer's, and that is precisely the substitution §8 exists to
+prevent.
+
+`<title>` leads with the page and ends with the site's name, since a search
+result and a browser tab both truncate from the right. The index inverts it: the
+site is the subject there, so it leads with the name and follows with the
+headline.
+
+The social card is one static image for the whole site, built by
+`scripts/og-card.ts` from the same tokens and faces the pages use. Per-article
+cards wait on the image pipeline, which does not exist yet.
 
 ### Redirect rules
 

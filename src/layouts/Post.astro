@@ -35,7 +35,18 @@ const newer = at > 0 ? all[at - 1] : undefined;
 const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
 ---
 
-<Base title={data.title} description={data.summary} lang={data.lang} noindex={data.status === 'draft'}>
+<Base
+  title={data.title}
+  description={data.summary}
+  lang={data.lang}
+  noindex={data.status === 'draft'}
+  article={{
+    published: data.date,
+    modified: data.updated,
+    tags: data.tags,
+    byHuman: data.author === 'human',
+  }}
+>
   <div class="journal-page">
   {/*
     Pagefind indexes only what carries `data-pagefind-body`, and a page without

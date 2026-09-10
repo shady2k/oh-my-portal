@@ -10,6 +10,8 @@ import Revision from '../components/Revision.astro';
 import PencilRule from '../components/PencilRule.astro';
 import Base from '../layouts/Base.astro';
 import { getAuthor, listProjects, STATE_LABEL } from '../site.ts';
+import { siteName } from '../seo.ts';
+import { displayHeading } from '../typography.ts';
 import { listPosts, listTags } from '../posts.ts';
 
 const posts = await listPosts();
@@ -26,7 +28,11 @@ const changed = posts.flatMap((post) => (post.data.revisions ?? []).map((revisio
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
-<Base title="Записи" description="Записи о домашней инфраструктуре, инструментах и агентах.">
+<Base
+  title={siteName(author)}
+  tagline={displayHeading(author?.headline ?? 'Идеи, которые стали опытом')}
+  description="Записи о домашней инфраструктуре, инструментах и агентах."
+>
   <header class="intro">
     <div class="intro-copy">
     <p class="field-label journal-name">Полевой журнал</p>

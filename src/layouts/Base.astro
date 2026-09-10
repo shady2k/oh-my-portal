@@ -1,5 +1,6 @@
 ---
 import { getAuthor } from '../site.ts';
+import { type ArticleMeta, ogLocale, pageTitle, siteName, structuredData } from '../seo.ts';
 import '../styles/base.css';
 
 import ThemeInit from '../components/ui/ThemeInit.astro';
@@ -17,20 +18,52 @@ interface Props {
   noindex?: boolean;
   /** A narrower feed than /rss/ — a tag page advertises its own (R6). */
   feed?: string;
-
+  /** The homepage only: it titles itself with the site's name, then this. */
+  tagline?: string;
+  /** An article: the frontmatter facts `article:*` and BlogPosting want. */
+  article?: ArticleMeta;
 }
 
-const { title, description, lang = 'ru', noindex = false, feed } = Astro.props;
+const { title, description, lang = 'ru', noindex = false, feed, tagline, article } = Astro.props;
+
+/* R3: a way to make contact, visible from any page — the footer is every page.
+   It supplies the site's name too, so the head and the wordmark cannot disagree. */
+const author = await getAuthor();
+const site = siteName(author);
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const origin = new URL('/', Astro.site);
+
+/*
+ * One card for the whole site, not one per article.
+ *
+ * Per-post cards need the image pipeline that does not exist yet
+ * (oh-my-portal-xts); this is the fallback that has to exist first, and a link
+ * with no card at all is what every share into a chat window looked like until
+ * now. `scripts/og-card.ts` builds it from the same tokens and faces the site
+ * uses, so it cannot drift into looking like somebody else's site.
+ */
+const card = new URL('/og.png', Astro.site);
+
+/* Nothing structured on a page that asked not to be indexed — drafts, /search/
+   and the 404. Describing yourself to a crawler you just turned away is the same
+   contradiction as listing a noindex address in the sitemap. */
+const structured = noindex ? [] : structuredData({
+  title,
+  description,
+  canonical,
+  site: origin,
+  siteName: site,
+  lang,
+  authorName: author?.name,
+  article,
+});
 /*
  * Design §6: `<link rel="alternate">` for clients that read the head rather than
  * negotiating. Directory addresses only — those are the ones that have a twin.
  */
 const path = Astro.url.pathname;
 const markdown = path.endsWith('/') ? `${path}index.md` : null;
-/* R3: a way to make contact, visible from any page — the footer is every page. */
-const author = await getAuthor();
 
 const sections = [
   { href: '/archive/', label: 'журнал', match: (p: string) => p.startsWith('/archive/') || p.startsWith('/posts/') || p.startsWith('/tag/') },
@@ -45,10 +78,22 @@ const sections = [
     <meta charset="utf-8" />
     <ThemeInit />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
+    <title>{pageTitle(title, site, tagline)}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     {noindex && <meta name="robots" content="noindex" />}
+    {/* Absent rather than a placeholder when no content repository is mounted. */}
+    {author && <meta name="author" content={author.name} />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/*
+      The paper tokens, spelled out: `content` cannot read a custom property, so
+      these two are the one place in the project where a colour is duplicated
+      out of tokens.css. Changing --paper without changing these leaves a phone's
+      address bar the wrong colour — nothing else breaks, which is exactly why
+      it would go unnoticed.
+    */}
+    <meta name="theme-color" content="#fdfbf7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1d1e1c" media="(prefers-color-scheme: dark)" />
     {/*
       Design §5: the default locale is unprefixed, so x-default points at this
       same tree. When an /en/ tree appears, it adds an entry here and nothing
@@ -59,12 +104,61 @@ const sections = [
     {markdown && <link rel="alternate" type="text/markdown" href={markdown} />}
     {feed && <link rel="alternate" type="application/rss+xml" title={title} href={feed} />}
     <link rel="alternate" type="application/rss+xml" title="Все записи" href="/rss/" />
+
+    {/*
+      Design §6 gave agents llms.txt, markdown twins and /index.json, and a
+      person pasting a link into Telegram got a bare URL. These are the same
+      three facts the head already states, in the vocabulary an unfurler reads.
+
+      og:title is the bare page title: every client renders og:site_name beside
+      it, so the composed title would say the site's name twice.
+    */}
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={site} />
+    <meta property="og:locale" content={ogLocale(lang)} />
+    <meta property="og:image" content={card} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    {/* What the card actually says, word for word. It is one fixed image, so
+        alt text derived from the page — or from the author's name, which the
+        card does not carry — would describe something the reader is not seeing. */}
+    <meta
+      property="og:image:alt"
+      content="Полевой журнал — домашняя инфраструктура, инструменты и ИИ-агенты"
+    />
+
+    {
+      article && (
+        <>
+          <meta property="article:published_time" content={article.published.toISOString()} />
+          {article.modified && (
+            <meta property="article:modified_time" content={article.modified.toISOString()} />
+          )}
+          {/* §8: see ArticleMeta.byHuman — an article the inhabitant wrote
+              carries no author here rather than the maintainer's name. */}
+          {article.byHuman && author && <meta property="article:author" content={author.name} />}
+          {article.tags.map((tag) => <meta property="article:tag" content={tag} />)}
+        </>
+      )
+    }
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={card} />
+
+    {structured.map((block) => (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(block)} />
+    ))}
   </head>
   <body>
     <a class="skip utility" href="#main">к содержанию</a>
 
     <header class="frame site-header">
-      <a class="wordmark" href="/">{author?.name ?? 'Полевой журнал'}</a>
+      <a class="wordmark" href="/">{site}</a>
       {/* The content repository supplies the identity; navigation stays shared. */}
       <nav class="masthead" aria-label="разделы">
         {

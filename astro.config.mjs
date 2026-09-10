@@ -6,7 +6,9 @@ import { codeTheme, syntaxVariables } from './src/styles/code-theme.ts';
 // The public URL is deployment data, not engine data: this repository carries no
 // site of its own (design §2). CI sets SITE_URL; the placeholder only keeps
 // `astro build` runnable here.
-const site = process.env.SITE_URL ?? 'https://example.com';
+// `||`, not `??`: an empty SITE_URL is the same mistake as an unset one, and CI
+// variables arrive empty far more often than they arrive absent.
+const site = process.env.SITE_URL || 'https://example.com';
 
 export default defineConfig({
   site,

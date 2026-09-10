@@ -81,6 +81,8 @@ server {
     location = /llms.txt { }
     location = /llms-full.txt { }
     location = /index.json { }
+    location = /robots.txt { }
+    location = /sitemap.xml { }
 
     # Astro builds with `format: 'directory'` and `trailingSlash: 'always'`, so
     # every route is a directory holding index.html and index.md.

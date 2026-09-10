@@ -14,7 +14,19 @@ import { extname, join, resolve } from 'node:path';
 export function build(env: Record<string, string>, out: string) {
   rmSync(out, { recursive: true, force: true });
   const options = {
-    env: { ...process.env, CONTENT_DIR: 'test/fixtures/posts', DATA_DIR: 'test/fixtures/data', ...env },
+    env: {
+      ...process.env,
+      CONTENT_DIR: 'test/fixtures/posts',
+      DATA_DIR: 'test/fixtures/data',
+      /*
+       * A real host, so the fixtures exercise the path a deployment takes. The
+       * config's `https://example.com` fallback is what check-outputs.ts now
+       * refuses, and a test suite that built with it would be asserting against
+       * a build the gate would reject.
+       */
+      SITE_URL: 'https://journal.example.test',
+      ...env,
+    },
     stdio: 'pipe' as const,
   };
   execFileSync('npx', ['astro', 'build', '--outDir', out], options);

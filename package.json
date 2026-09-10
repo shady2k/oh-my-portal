@@ -7,13 +7,14 @@
   "scripts": {
     "dev": "PREVIEW=1 CONTENT_DIR=examples/posts DATA_DIR=examples/data astro dev",
     "build": "astro build && pagefind --site dist && node scripts/check-outputs.ts",
-    "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro build && pagefind --site dist && node scripts/check-outputs.ts",
+    "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro build && pagefind --site dist && CHECK_PLACEHOLDER_HOST=allow node scripts/check-outputs.ts",
     "preview": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro preview",
     "check": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro check",
     "redirects": "node scripts/gen-redirects.ts",
     "test": "vitest run --no-file-parallelism",
     "verify": "npm run check && npm run test",
     "screenshot": "node scripts/screenshot.ts",
+    "og": "node scripts/og-card.ts",
     "ui": "node scripts/ui-kit.ts",
     "test:ui": "node scripts/check-ui.ts",
     "test:theme": "node scripts/check-theme.ts"
