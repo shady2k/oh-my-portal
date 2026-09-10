@@ -239,7 +239,18 @@ const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
 </script>
 
 <style>
-  .journal-page { display: grid; grid-template-columns: minmax(0, var(--measure)) minmax(0, 15rem); column-gap: clamp(2rem, 7vw, 7rem); justify-content: space-between; }
+  /*
+   * `justify-content: center`, not `space-between`.
+   *
+   * The two columns are 40rem and 15rem inside a 72rem frame, so `space-between`
+   * flung them to opposite edges and made the gap 272px — wider than the margin
+   * rail itself, and wider than the `column-gap` clamp this rule already sets,
+   * which the two declarations quietly disagreed about. A marginal note that
+   * far from its text is not marginalia, it is a second column; and the article
+   * ended up pinned to the left edge of the window rather than sitting in the
+   * page. Centring lets the clamp mean what it says.
+   */
+  .journal-page { display: grid; grid-template-columns: minmax(0, var(--measure)) minmax(0, 15rem); column-gap: clamp(2rem, 7vw, 7rem); justify-content: center; }
   .journal-page > :global(*) { min-inline-size: 0; grid-column: 1; }
   .journal-page > .article-margin { grid-column: 2; grid-row: 1; }
   .article-margin { align-self: start; margin-block-start: 4rem; padding-inline-start: 1.5rem; border-inline-start: 1px solid var(--rule); font-size: 0.9375rem; }

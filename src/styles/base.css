@@ -154,6 +154,41 @@ a:focus-visible {
 
 /* --- prose --- */
 
+/*
+ * Hyphenation, and it is not cosmetic here.
+ *
+ * The reading column is 40rem and the language is Russian, whose words are long:
+ * one word that will not fit leaves a hole the width of that word, and at this
+ * measure the right edge tears badly enough to be read as a layout fault. The
+ * browser holds the Russian patterns already — `<html lang="ru">` is what makes
+ * them apply, and it is set per page because §5 makes `lang` authoritative.
+ *
+ * The limits matter as much as the switch. Without them short words break too,
+ * and the column fills with two-letter fragments; eight characters minimum,
+ * four before the break and three after, keeps the hyphen for words long enough
+ * to be worth splitting.
+ */
+p,
+li,
+blockquote,
+dd {
+  hyphens: auto;
+  hyphenate-limit-chars: 8 4 3;
+}
+
+/*
+ * Never inside code. A hyphen inserted into a command is not a typographic
+ * nicety, it is a wrong command — and the reader who copies it has no way to
+ * know the hyphen was ours.
+ */
+code,
+kbd,
+samp,
+pre,
+.utility {
+  hyphens: manual;
+}
+
 p {
   margin-block: 0 var(--space-3);
 }
@@ -263,4 +298,23 @@ td {
   text-align: start;
   padding: var(--space-1) var(--space-2);
   border-block-end: 1px solid var(--rule);
+}
+
+/*
+ * The staging banner (src/staging.ts).
+ *
+ * Deliberately not styled to blend in: a rehearsal that looks like the site is
+ * one someone links to or reports bugs against. Red is the page's one alarm
+ * colour and this is the one place outside an editorial mark that earns it.
+ */
+.staging-note {
+  margin: 0 auto var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  color: var(--accent);
+  font-family: var(--face-utility);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: center;
 }

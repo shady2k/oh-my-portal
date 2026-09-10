@@ -77,17 +77,35 @@ import Base from '../../layouts/Base.astro';
 
   /**
    * The index only exists after `pagefind --site dist`, so there is nothing to
-   * import during `astro dev`. The path is held in a variable and marked
-   * ignored so Vite does not try to resolve it at build time either.
+   * import during `astro dev`, and nothing for the bundler to resolve at build
+   * time either.
+   *
+   * `/* @vite-ignore *​/` is not enough on its own, and the way it failed is
+   * worth remembering. Vite still recognised the call as a dynamic import and
+   * wrapped it in its preload helper, leaving a literal `__VITE_PRELOAD__` in
+   * the shipped bundle. That identifier does not exist at runtime, so the
+   * expression threw a ReferenceError BEFORE the import was ever attempted —
+   * which is why the network showed no request for the index at all, and why
+   * search had never worked in a production build while working in dev.
+   *
+   * Building the import inside `new Function` puts it beyond the bundler's
+   * reach entirely: it sees a string, not an import.
    */
+  const importAtRuntime = new Function('url', 'return import(url)') as (url: string) => Promise<unknown>;
+
   async function load(): Promise<Pagefind | null> {
     if (pagefind) return pagefind;
-    const path = '/pagefind/pagefind.js';
     try {
-      pagefind = (await import(/* @vite-ignore */ path)) as Pagefind;
+      pagefind = (await importAtRuntime('/pagefind/pagefind.js')) as Pagefind;
       await pagefind.init();
       return pagefind;
-    } catch {
+    } catch (error) {
+      /*
+       * Loudly. A swallowed failure here is indistinguishable from "the index
+       * has not been built yet", and the page said exactly that for months
+       * while the index sat on disk, fully built and correct.
+       */
+      console.error('Не удалось загрузить индекс поиска:', error);
       return null;
     }
   }
