@@ -329,6 +329,14 @@ and commands are the first things such a summary loses.
 return the agent version. This works with no action on the agent's side: coding
 assistants already send that header. This is the "hello, here is your version".
 
+> **Not implemented, and not pending.** The site is served from object storage
+> behind a CDN, which has no request-time logic; this is the one item on the list
+> that a static host cannot do at all. It is ranked first because it is the most
+> valuable, and it stays first so that anyone weighing a future move away from
+> object storage can see what the move would buy. See
+> `docs/decisions/ADR-0001-no-accept-negotiation.md`. Items 2, 3 and 4 are all
+> built, and they are what the ai-first layer actually consists of today.
+
 **2. The structured core as the first block** — in both versions. It works even
 for an agent that asked for nothing, and a human at 1 a.m. prefers it too.
 
@@ -393,18 +401,23 @@ cloaking.** Googlebot does not ask for markdown and sees ordinary HTML.
 
 ## 6a. The thin dynamic layer
 
-Two requirements cannot run on pure static hosting:
+**One** requirement cannot run on pure static hosting: accepting subscriptions
+(R6). One endpoint, proxying to an external mail service. We never run our own
+mail — deliverability, SPF, DKIM and domain reputation are a separate hobby.
 
-- parsing `Accept` and serving the agent version (§6)
-- accepting subscriptions (R6)
+**Rule: dynamic behaviour is one endpoint and nothing else.** If a second one
+appears, that is a reason to doubt it is needed rather than a reason to build a
+place for it to live.
 
-**Rule: all dynamic behaviour lives in one place — the reverse proxy — and
-nowhere else.** If something does not fit there, that is a reason to doubt it is
-needed.
-
-In practice: a `map` on the header in nginx (§7) and one endpoint for
-subscriptions proxying to an external mail service. We never run our own mail —
-deliverability, SPF, DKIM and domain reputation are a separate hobby.
+*An earlier version of this section listed a second requirement — parsing
+`Accept` and serving the agent version on the same address — and phrased the
+rule as "all dynamic behaviour lives in the reverse proxy". Both are gone, and
+the reason is recorded in `docs/decisions/ADR-0001-no-accept-negotiation.md`:
+the site is served from object storage behind a CDN, which has no request-time
+logic to put a `map` in. The `Accept` half of §6 is **not implemented**. Every
+other part of §6 is: the twins keep their own addresses, `llms.txt` is served,
+the `<link rel="alternate">` is in every head, and the CDN adds the `Link`
+header. What is lost is the version that required no cooperation at all.*
 
 ## 7. Technology choices
 
@@ -452,11 +465,43 @@ supported. No semantics (§11).
 primarily in Russia, where those platforms are unavailable or unreliable. This
 constraint outranks any convenience.
 
-Static content is radically simpler to host than Ghost: a folder of files behind
-a reverse proxy. The public site should sit on hosting with dependable regional
-reachability rather than on anything experimental.
+Static content is radically simpler to host than Ghost: a folder of files. The
+public site sits on hosting with dependable regional reachability rather than on
+anything experimental.
 
-### Content negotiation in nginx, no serverless
+**Decided: S3-compatible object storage behind that provider's CDN.** No server
+of ours runs anywhere. The CDN is not an accelerator here, it is load-bearing —
+it terminates TLS for the custom domain, and it is the only place that can add a
+response header.
+
+Measured against a live bucket rather than read from documentation, because the
+documentation was wrong twice (`br` issue `vk-hosting-findings-vn2` has the
+detail):
+
+- Index documents **are** substituted in subdirectories, so `trailingSlash:
+  'always'` and `build.format: 'directory'` survive intact. This was the one
+  finding that could have forced §5 to change.
+- Public read needs **both** a bucket policy granting `s3:GetObject` and a
+  `public-read` ACL on the objects. Neither alone is enough, and the failure is
+  asymmetric: with only the policy, every subdirectory works and the front page
+  returns 403.
+- An explicit `Content-Type` at upload survives, so the markdown twins keep
+  `charset=utf-8`. Without it they arrive as mojibake — the same failure the
+  nginx template had to fix.
+- A missing address returns **403, not 404**, though the configured error
+  document is what gets served. Open; the CDN may be able to rewrite it.
+
+*What this costs:* content negotiation on `Accept` (§6, item 1) is not possible
+and is not implemented — `docs/decisions/ADR-0001-no-accept-negotiation.md`.
+
+### Content negotiation in nginx — not our deploy, kept for whoever self-hosts
+
+**This subsection describes a path this site does not take.** It stays because
+the engine is a public product: someone running it behind their own nginx gets
+negotiation for free, and `nginx/site.conf.example` is a working configuration
+they can copy. Nothing below is true of the deployment described above, which
+serves from object storage and cannot look at a request header at all.
+
 
 No edge layer is needed; the reverse proxy does it. Negotiation is a single
 `map`, and it swaps the **index file** rather than the document root:
@@ -584,13 +629,18 @@ Telegram/VK sharing, subscription, per-topic feeds.
 tool names.
 
 **1d. Ai-first tooling.** Triple output (R10), `.md`/`.json` twins,
-`/index.json`, `llms.txt`, content negotiation via nginx `map` with mandatory
-`Vary: Accept`, the `Link` header on every response, the structured core as the
-first block of an article.
+`/index.json`, `llms.txt`, the `Link` header on every response, the structured
+core as the first block of an article.
+
+Content negotiation on `Accept` was the first item here and has been dropped:
+the deploy is object storage, which has no request-time logic
+(`docs/decisions/ADR-0001-no-accept-negotiation.md`). Everything else in this
+phase is unaffected — the twins were never generated by the proxy, they are
+build outputs.
 
 *Done when:* every old address 301s in one hop to a new address that returns
 200, `/rss/` still serves at its original address, the build emits all three
-outputs, and `curl -H "Accept: text/markdown"` returns markdown.
+outputs, and each twin resolves at its own address with `charset=utf-8`.
 
 ### Phase 2 — the agent pipeline
 
@@ -883,9 +933,9 @@ invented — a value that cannot be computed is omitted, never filled with
 something plausible.
 
 **The machine surface stays off the page.** An agent never renders this HTML: it
-arrives with `Accept: text/markdown`, reads `<link rel="alternate">` in the head,
-or follows the `Link:` header nginx adds (§6). A visible row of links to twins
-reaches none of them and costs every human reader a line.
+reads `<link rel="alternate">` in the head, follows the `Link:` header the CDN
+adds, or goes straight to a twin address listed in `llms.txt` (§6). A visible row
+of links to twins reaches none of them and costs every human reader a line.
 
 **Borrow the typography, not someone else's vocabulary.** Tokens like
 `system_prompt`, `context_window` or `<|endoftext|>` belong to the sites that
