@@ -19,6 +19,10 @@ dist-test*/
 # 5c1 keeps it that way. A local checkout or symlink of the content repository
 # lands here; making it unstageable is cheaper than remembering not to stage it.
 /content/
+# And without the slash: a trailing slash matches directories only, and a
+# symlink to the content repository is not a directory as far as git is
+# concerned — so the symlink form showed up as untracked and could be staged.
+/content
 
 # Screenshots from scripts/screenshot.ts — look at them, do not commit them.
 screenshots/

@@ -2,7 +2,7 @@ import { parse as parseYaml } from 'yaml';
 
 /**
  * The migration redirect map — design §5, rules restated in the header of
- * `migration/redirects.yaml`.
+ * the content repository’s `migration/redirects.yaml`.
  *
  * Astro's own `redirects` config is not used: in a static build it emits
  * meta-refresh HTML and, in Astro's words, "the status code is not used by the

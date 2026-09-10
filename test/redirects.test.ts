@@ -1,26 +1,71 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { EXEMPT, expand, render, validate } from '../src/redirects.ts';
 
-const SOURCE = 'migration/redirects.yaml';
-const OUTPUT = 'nginx/redirects.conf';
-const map = expand(readFileSync(SOURCE, 'utf8'));
-
 /**
- * Pinned from the old sitemaps (sitemap-{pages,posts,authors,tags}.xml,
- * exported 2026-09-08): 49 addresses, of which /rss/ is exempt by R2. If the
- * map ever covers fewer, an address has been dropped silently.
+ * The library, against a fixture.
+ *
+ * The real map used to live in this repository and these tests ran against it,
+ * which made them stronger than what is here now: 51 genuine addresses through
+ * the genuine library beats any example I invent. It moved out because a
+ * migration map describes one specific site and this repository carries no site
+ * of its own (design §2) — and, more sharply, because the map is an input to the
+ * same build as the articles it points at. Versioned apart, they drift, and a
+ * 301 starts landing on an article that is not in that build.
+ *
+ * So exhaustiveness is now the content repository's check to run, against its
+ * own `migration/old-addresses.txt`. What stays here is what the engine actually
+ * owns: that the rules of §5 are enforced and that the rendering is correct.
+ *
+ * The fixture below is deliberately shaped like a real map — every section, a
+ * tag that keeps its name, a page that stays put, an orphan pointing at an
+ * article — because the interesting bugs live in the interaction between
+ * sections, not inside one.
  */
-const OLD_ADDRESSES = 49;
+const FIXTURE = `
+posts:
+  staryi-slag:      new-slug
+  drugoi-slag:      another-slug
 
-describe('the map itself', () => {
+pages:
+  /:                /
+  /about/:          /about/
+  /about-2/:        /about/
+  /home/:           /
+
+tags:
+  k3s:              kubernetes
+  kubernetes:       kubernetes
+
+orphan_tags:
+  /tag/odinokii/:   /posts/new-slug/
+`;
+
+const map = expand(FIXTURE);
+
+describe('a well-formed map', () => {
   it('breaks no rule from design §5', () => {
     expect(validate(map)).toEqual([]);
   });
 
-  it('covers every old address', () => {
-    expect(map.redirects.length + map.unchanged.length + EXEMPT.length).toBe(OLD_ADDRESSES);
+  it('separates addresses that move from addresses that stay', () => {
+    expect(map.redirects.map((r) => r.from).sort()).toEqual([
+      '/about-2/',
+      '/drugoi-slag/',
+      '/home/',
+      '/staryi-slag/',
+      '/tag/k3s/',
+      '/tag/odinokii/',
+    ]);
+    expect(map.unchanged.map((r) => r.from).sort()).toEqual(['/', '/about/', '/tag/kubernetes/']);
+  });
+
+  it('expands each section with its own address shape', () => {
+    const to = (from: string) => [...map.redirects, ...map.unchanged].find((r) => r.from === from)?.to;
+    expect(to('/staryi-slag/')).toBe('/posts/new-slug/');
+    expect(to('/tag/k3s/')).toBe('/tag/kubernetes/');
+    expect(to('/tag/odinokii/')).toBe('/posts/new-slug/');
+    expect(to('/home/')).toBe('/');
   });
 
   it('never redirects /rss/', () => {
@@ -70,11 +115,7 @@ describe('validate', () => {
 });
 
 describe('nginx output', () => {
-  const conf = render(map.redirects, SOURCE);
-
-  it('matches the committed file', () => {
-    expect(readFileSync(OUTPUT, 'utf8')).toBe(conf);
-  });
+  const conf = render(map.redirects, 'fixture');
 
   it('emits 301 and never 302', () => {
     expect(conf).not.toMatch(/return 302/);
@@ -92,5 +133,10 @@ describe('nginx output', () => {
     for (const target of conf.matchAll(/return 301 (\S+);/g)) {
       expect(target[1]).toMatch(/\/$/);
     }
+  });
+
+  it('names its source, so the generated file cannot be mistaken for a hand-edited one', () => {
+    expect(conf).toContain('Generated from fixture');
+    expect(conf).toContain('DO NOT EDIT');
   });
 });

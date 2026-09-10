@@ -1,15 +1,17 @@
 # nginx server block — a template, adapted per deployment.
 #
-# Unlike nginx/redirects.conf this file is NOT generated: it names hosts and
-# paths, which are deployment data and do not belong in the engine repository.
+# Unlike the redirects.conf it includes, this file is NOT generated: it names
+# hosts and paths, which are deployment data and do not belong in the engine
+# repository. Neither does the redirect map: it lives with the articles it points
+# at, and `scripts/gen-redirects.ts <map.yaml> <out.conf>` renders it there.
 # Copy it, fill in the two placeholders, and keep it with the deploy.
 #
 # What it has to get right, and why:
 #
 #   1. Content negotiation on Accept (design §6, §7), with `Vary: Accept`.
 #   2. /rss/ serves the feed at its original address (R2).
-#   3. Every old address 301s in one hop (R1) — nginx/redirects.conf, generated
-#      from migration/redirects.yaml by `npm run redirects`.
+#   3. Every old address 301s in one hop (R1) — redirects.conf, generated from
+#      the site's own redirect map by `npm run redirects -- <map> <out>`.
 #   4. The Link header advertising /llms.txt on every response (§7).
 
 # --- negotiation -------------------------------------------------------------

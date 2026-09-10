@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 /**
- * Turns the redirect map into nginx configuration.
+ * Turns a redirect map into nginx configuration.
  *
- *   node scripts/gen-redirects.ts [--check] [map.yaml] [out.conf]
+ *   node scripts/gen-redirects.ts [--check] <map.yaml> <out.conf>
  *
- * `--check` writes nothing and exits non-zero if the committed output is stale.
- * The generated file is committed on purpose: a diff on it is the review of a
+ * Both paths are required and neither has a default. They used to default to
+ * `migration/redirects.yaml` and `nginx/redirects.conf`, which quietly assumed
+ * this repository owned a site; it does not (design §2). The map lives beside
+ * the articles it points at, in the content repository, and the generated
+ * configuration belongs to that deploy.
+ *
+ * `--check` writes nothing and exits non-zero if the output on disk is stale.
+ * Commit the generated file wherever it lands: a diff on it is the review of a
  * change to production routing.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -13,9 +19,12 @@ import { expand, render, validate } from '../src/redirects.ts';
 
 const argv = process.argv.slice(2);
 const check = argv.includes('--check');
-const [source = 'migration/redirects.yaml', out = 'nginx/redirects.conf'] = argv.filter(
-  (a) => !a.startsWith('--'),
-);
+const [source, out] = argv.filter((a) => !a.startsWith('--'));
+
+if (!source || !out) {
+  console.error('usage: gen-redirects.ts [--check] <map.yaml> <out.conf>');
+  process.exit(2);
+}
 
 const map = expand(readFileSync(source, 'utf8'));
 const problems = validate(map);
