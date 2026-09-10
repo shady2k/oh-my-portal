@@ -47,15 +47,13 @@
   --mark-ink: var(--paper);
 
   /*
-   * One sans for everything a person reads, monospace for everything a machine
-   * produced — dates, sizes, paths, code. Both are system stacks: a webfont is
-   * one more request against a CDN whose reachability is exactly the constraint
-   * that ruled out half the hosting options (design §7). Self-hosting a face
-   * from our own origin would dodge that and is the way to a typeface of our
-   * own, when we want one.
+   * Local IBM Plex faces give prose and metadata a consistent shape across
+   * platforms. fonts.css defines Latin/Cyrillic subsets with font-display: swap;
+   * Astro serves their fingerprinted files from this site's own origin (§7).
+   * System stacks keep text readable while fonts load or if a request fails.
    */
-  --face-prose: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
-  --face-utility: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  --face-prose: 'IBM Plex Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+  --face-utility: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
 
   /* --- scale --- */
   --measure: 40rem; /* the reading column; everything else is margin */

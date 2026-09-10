@@ -679,6 +679,19 @@ Non-scaling strokes retain their weight on phones; decorative SVGs do not
 intercept links and are hidden from assistive technology. Each visual variant
 is saved in a separate local commit for comparison and rollback.
 
+The typography refinement aligns the experiment copy with the top of its drawing
+and tightens the introduction gap. The journal heading has no lower rule; space
+leads into the first entry, and pencil separators remain between entries.
+Experiment descriptions use 18px text; compact entry summaries and the revision
+explanation use 17px. Dates and other metadata keep their smaller size.
+
+Prose uses self-hosted IBM Plex Sans Variable (100–700, normal and italic), and
+utility text uses IBM Plex Mono (400/700). Both include Latin and Cyrillic subsets,
+with system fallbacks and `font-display: swap`. The eight WOFF2 assets total
+204,688 bytes; ordinary Sans/Mono text in both scripts requests 98,288 bytes.
+Other styles load only when used. Sources, versions and licenses are recorded in
+[`src/assets/fonts/README.md`](../../src/assets/fonts/README.md).
+
 ### Previous direction (historical rationale)
 
 **One loud object, and a quiet page under it.**

@@ -69,6 +69,13 @@ for (const { path, name, width, height } of SHOTS) {
     failed = true;
     console.error(`Images failed to load: ${name}`, brokenImages);
   }
+  const brokenFonts = await page.evaluate(() => Array.from(document.fonts)
+    .filter((face) => face.status === 'error')
+    .map((face) => `${face.family} ${face.weight} ${face.style}`));
+  if (brokenFonts.length) {
+    failed = true;
+    console.error(`Fonts failed to load: ${name}`, brokenFonts);
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   if (overflow) {
     failed = true;
@@ -86,6 +93,6 @@ await browser.close();
  * one, which is R1 territory — worth failing over rather than logging.
  */
 if (failed) {
-  console.error('A page failed its HTTP, image or viewport-width check.');
+  console.error('A page failed its HTTP, image, font or viewport-width check.');
   process.exit(1);
 }

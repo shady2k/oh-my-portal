@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import './fonts.css';
 
 /* Only marginal annotations use handwriting; served from the same origin. */
 @font-face {
