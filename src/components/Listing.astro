@@ -3,6 +3,7 @@ import { type Post } from '../posts.ts';
 import { articleMarkdown } from '../projections.ts';
 import Tag from './Tag.astro';
 import { displayDate } from '../dates.ts';
+import PencilRule from './PencilRule.astro';
 
 /**
  * The archive: date, title, and what the article weighs to a machine.
@@ -39,7 +40,7 @@ const size = (post: Post) => {
 
 <ul class:list={['listing', { compact }]}>
   {
-    posts.map((post) => (
+    posts.map((post, index) => (
       <li>
         <div class="date-group">
         <time class="date" datetime={iso(post.data.date)} title={displayDate(post.data.date)}>
@@ -68,6 +69,7 @@ const size = (post: Post) => {
             <Tag tag={tag} href={`/tag/${tag}/`} />
           ))}
         </p>}
+        {compact && index < posts.length - 1 && <div class="entry-rule"><PencilRule /></div>}
       </li>
     ))
   }
@@ -105,8 +107,8 @@ const size = (post: Post) => {
     max-inline-size: var(--measure);
   }
   .year { display: block; font-size: 0.75rem; margin-block-start: 0.2rem; }
-  .compact li { grid-template-columns: 10rem minmax(0, 1fr); padding-block: 1.5rem; }
-  .compact li:last-child { border-block-end: 0; }
+  .compact li { position: relative; grid-template-columns: 10rem minmax(0, 1fr); padding-block: 1.5rem; border-block-end: 0; }
+  .entry-rule { position: absolute; inset-inline: 0; inset-block-end: -6px; pointer-events: none; }
   .compact-meta { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; margin: 0.25rem 0 0; font-family: var(--face-utility); font-size: 0.75rem; color: var(--ink-quiet); }
   .compact .title { font-size: 1.25rem; }
   .compact .summary { font-size: 0.9375rem; max-inline-size: 48rem; line-height: 1.5; }

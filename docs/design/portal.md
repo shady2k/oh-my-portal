@@ -670,6 +670,13 @@ experiment illustration and small RSS drawing provide the two illustration
 scales without additional decorative images. On phones the drawing follows the
 experiment summary, before its detailed observation.
 
+The pencil-border experiment adds light, imperfect graphite outlines around the
+featured experiment and the before/after comparison. Three SVG passes suggest
+pressure and a faint second stroke; non-scaling strokes keep their weight on
+phones. The compact journal uses matching pencil separators. All border art is
+non-interactive and hidden from assistive technology. The experiment is isolated
+from the baseline in its own commit so the maintainer can compare and revert it.
+
 ### Previous direction (historical rationale)
 
 **One loud object, and a quiet page under it.**
