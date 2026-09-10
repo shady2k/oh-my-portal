@@ -66,9 +66,21 @@ required('llms.txt');
 required('llms-full.txt');
 required('index.html');
 required('index.md');
-required('robots.txt', (body) =>
-  body.includes('Sitemap: http') ? null : 'no absolute Sitemap: line',
-);
+/*
+ * A staging build must be the mirror image of a production one here, and both
+ * halves are worth a gate. A production robots.txt that forgot its sitemap is a
+ * site crawlers have to guess their way around; a staging robots.txt that kept
+ * `Allow: /` is a rehearsal competing with the real articles for the same
+ * search results. The second failure is silent, slow, and expensive to undo.
+ */
+required('robots.txt', (body) => {
+  if (process.env.STAGING === '1') {
+    if (!/^Disallow: \/$/m.test(body)) return 'staging build does not disallow crawlers';
+    if (body.includes('Sitemap:')) return 'staging build still advertises a sitemap';
+    return null;
+  }
+  return body.includes('Sitemap: http') ? null : 'no absolute Sitemap: line';
+});
 required('sitemap.xml', (body) => (body.includes('<loc>') ? null : 'no <loc> entries'));
 required('index.json', (body) => {
   try {
@@ -96,6 +108,37 @@ const walk = (dir: string) => {
   }
 };
 walk('');
+
+/*
+ * Every picture an article references must exist in the build.
+ *
+ * Content images live in the content repository and are copied in by an
+ * integration, so the two halves — the markdown that names a file and the file
+ * itself — travel separately and can part company without anything failing.
+ * A broken image does not break a build, does not appear in a diff, and is the
+ * first thing every reader sees. Same argument as the missing twin above: make
+ * it a machine's problem before it is a reader's.
+ */
+const referenced = new Set<string>();
+const collect = (dir: string) => {
+  for (const entry of readdirSync(join(dist, dir), { withFileTypes: true })) {
+    const rel = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) collect(rel);
+    else if (entry.name.endsWith('.html') || entry.name.endsWith('.md')) {
+      for (const m of readFileSync(join(dist, rel), 'utf8').matchAll(/["(](\/images\/[^"')\s]+)/g)) {
+        referenced.add(m[1]);
+      }
+    }
+  }
+};
+collect('');
+for (const path of referenced) {
+  try {
+    statSync(join(dist, path));
+  } catch {
+    problems.push(`${path} is referenced but not in the build — is IMAGES_DIR set?`);
+  }
+}
 
 if (problems.length) {
   console.error(`R10: ${dist} is not a complete build — ${problems.length} problem(s)`);

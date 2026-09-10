@@ -1,5 +1,6 @@
 ---
 import { getAuthor } from '../site.ts';
+import { STAGING } from '../staging.ts';
 import { type ArticleMeta, ogLocale, pageTitle, siteName, structuredData } from '../seo.ts';
 import '../styles/base.css';
 
@@ -24,7 +25,14 @@ interface Props {
   article?: ArticleMeta;
 }
 
-const { title, description, lang = 'ru', noindex = false, feed, tagline, article } = Astro.props;
+const { title, description, lang = 'ru', feed, tagline, article } = Astro.props;
+
+/*
+ * A staging build is noindex everywhere, regardless of what the page asked for.
+ * The switch is site-wide because the risk is site-wide: one page that forgot
+ * to opt in is one page of the rehearsal competing with the real article.
+ */
+const noindex = STAGING || Astro.props.noindex === true;
 
 /* R3: a way to make contact, visible from any page — the footer is every page.
    It supplies the site's name too, so the head and the wordmark cannot disagree. */
@@ -81,7 +89,7 @@ const sections = [
     <title>{pageTitle(title, site, tagline)}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    {noindex && <meta name="robots" content="noindex" />}
+    {noindex && <meta name="robots" content={STAGING ? 'noindex, nofollow' : 'noindex'} />}
     {/* Absent rather than a placeholder when no content repository is mounted. */}
     {author && <meta name="author" content={author.name} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -174,6 +182,17 @@ const sections = [
       </nav>
       <ThemePicker />
     </header>
+
+    {
+      /* Says out loud what the robots meta says to machines. A rehearsal that
+         looks exactly like the real site is one somebody will report bugs
+         against, or link to. */
+      STAGING && (
+        <p class="staging-note frame">
+          Репетиция переезда. Это не настоящий сайт — адреса, содержимое и оформление здесь могут быть неготовыми.
+        </p>
+      )
+    }
 
     <main id="main" class="frame">
       <slot />

@@ -154,3 +154,54 @@ describe('the nginx template', () => {
   // `Accept: text/markdown` and sets Vary on the response — need a running
   // nginx and belong to oh-my-portal-aa1, with the 301/200 redirect checks.
 });
+
+/**
+ * Staging.
+ *
+ * Both halves asserted against real builds, for the same reason the draft rule
+ * is: the risk is a page that forgets to opt in, and a unit test of the switch
+ * cannot see that. The production half matters as much as the staging half —
+ * a `Disallow: /` that leaked into production would take the whole site out of
+ * search, silently, and look like nothing at all in a diff.
+ */
+const OUT_STAGING = 'dist-test-staging';
+
+describe('a staging build', () => {
+  beforeAll(() => build({ STAGING: '1' }, OUT_STAGING), 120_000);
+
+  it('refuses every crawler in robots.txt', () => {
+    const robots = readFileSync(join(OUT_STAGING, 'robots.txt'), 'utf8');
+    expect(robots).toContain('Disallow: /');
+    expect(robots).not.toContain('Allow: /');
+  });
+
+  it('advertises no sitemap — inviting a crawler in and turning it away is a contradiction', () => {
+    expect(readFileSync(join(OUT_STAGING, 'robots.txt'), 'utf8')).not.toContain('Sitemap:');
+  });
+
+  it('puts noindex on every page, not only the ones that asked', () => {
+    for (const path of ['index.html', 'posts/published-example/index.html', 'about/index.html']) {
+      expect(readFileSync(join(OUT_STAGING, path), 'utf8'), path).toContain('name="robots"');
+      expect(readFileSync(join(OUT_STAGING, path), 'utf8'), path).toContain('noindex, nofollow');
+    }
+  });
+
+  it('says so where a human can see it, not only in the markup', () => {
+    expect(readFileSync(join(OUT_STAGING, 'index.html'), 'utf8')).toContain('Репетиция переезда');
+  });
+});
+
+describe('a production build is untouched by the staging switch', () => {
+  it('still invites crawlers and advertises the sitemap', () => {
+    const robots = readFileSync(join(OUT, 'robots.txt'), 'utf8');
+    expect(robots).toContain('Allow: /');
+    expect(robots).toContain('Sitemap:');
+    expect(robots).not.toMatch(/^Disallow: \/$/m);
+  });
+
+  it('carries no noindex on an ordinary article and no rehearsal banner', () => {
+    const article = readFileSync(page('posts/published-example'), 'utf8');
+    expect(article).not.toContain('name="robots"');
+    expect(article).not.toContain('Репетиция переезда');
+  });
+});

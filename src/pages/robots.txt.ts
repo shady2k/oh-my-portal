@@ -1,5 +1,7 @@
 import type { APIContext } from 'astro';
 
+import { STAGING } from '../staging.ts';
+
 /**
  * `/robots.txt`.
  *
@@ -18,15 +20,35 @@ import type { APIContext } from 'astro';
  * never see a response header for an address it has not fetched yet.
  */
 export function GET({ site }: APIContext) {
-  const body = [
-    'User-agent: *',
-    'Allow: /',
-    'Disallow: /search/',
-    '',
-    `Sitemap: ${new URL('/sitemap.xml', site!).href}`,
-    `# Agent-readable index: ${new URL('/llms.txt', site!).href}`,
-    '',
-  ].join('\n');
+  /*
+   * A rehearsal must not be indexed.
+   *
+   * The migration is tried on a staging host before the real address is
+   * switched over, and a full copy of the articles there would compete first
+   * with the site still running at the old address and then with the new one.
+   * The same articles on two hosts is exactly the duplication the redirect map
+   * exists to prevent — losing rankings to the rehearsal rather than to the
+   * move would be an expensive irony.
+   *
+   * No `Sitemap:` line either: inviting a crawler in and then asking it not to
+   * look is a contradiction, and some crawlers resolve it the wrong way.
+   */
+  const body = STAGING
+    ? [
+        '# Репетиция переезда. Это не настоящий сайт.',
+        'User-agent: *',
+        'Disallow: /',
+        '',
+      ].join('\n')
+    : [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /search/',
+        '',
+        `Sitemap: ${new URL('/sitemap.xml', site!).href}`,
+        `# Agent-readable index: ${new URL('/llms.txt', site!).href}`,
+        '',
+      ].join('\n');
 
   return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
