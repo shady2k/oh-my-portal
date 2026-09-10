@@ -670,12 +670,14 @@ experiment illustration and small RSS drawing provide the two illustration
 scales without additional decorative images. On phones the drawing follows the
 experiment summary, before its detailed observation.
 
-The pencil-border experiment adds light, imperfect graphite outlines around the
-featured experiment and the before/after comparison. Three SVG passes suggest
-pressure and a faint second stroke; non-scaling strokes keep their weight on
-phones. The compact journal uses matching pencil separators. All border art is
-non-interactive and hidden from assistive technology. The experiment is isolated
-from the baseline in its own commit so the maintainer can compare and revert it.
+The pencil-border review keeps the compact journal's graphite separators but
+removes enclosing frames: the experiment ends with a light pencil line, and a
+short stroke introduces the whole revision section, including its explanation.
+Removing the frame padding restores the shared text alignment, while a smaller
+gap after the latest entries brings the revision closer to the journal.
+Non-scaling strokes retain their weight on phones; decorative SVGs do not
+intercept links and are hidden from assistive technology. Each visual variant
+is saved in a separate local commit for comparison and rollback.
 
 ### Previous direction (historical rationale)
 
