@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHeader from '../components/ui/PageHeader.astro';
+import TypedHeadline from '../components/ui/TypedHeadline.astro';
+import EditorialNote from '../components/ui/EditorialNote.astro';
+import Tag from '../components/Tag.astro';
+import PencilRule from '../components/PencilRule.astro';
+import ExperimentSketch from '../components/ExperimentSketch.astro';
+import ExperimentTrail from '../components/ExperimentTrail.astro';
+import Listing from '../components/Listing.astro';
+import Revision from '../components/Revision.astro';
+import { listProjects } from '../site.ts';
+import { listPosts } from '../posts.ts';
+const projects = await listProjects();
+const project = projects.find((item) => item.sketch);
+const posts = await listPosts();
+const revision = posts.flatMap((post) => post.data.revisions ?? [])[0];
+const colors = ['paper', 'paper-sunk', 'ink', 'ink-quiet', 'rule', 'accent'];
+---
+<Base title="UI kit — Полевой журнал" description="Каталог компонентов и состояний для разработки." noindex>
+  <PageHeader title="UI kit" eyebrow="Полевой журнал" description="Живые компоненты сайта. Изменение компонента здесь меняет и страницы, которые его используют." />
+  <nav class="ui-topics" aria-label="Разделы каталога">
+    <a href="#type">Типографика</a><a href="#controls">Элементы</a><a href="#editorial">Редакционная сетка</a><a href="#entries">Записи</a>
+  </nav>
+  <section id="type">
+    <h2>Типографика и цвет</h2>
+    <p class="utility">IBM Plex Sans · IBM Plex Mono · Caveat для авторских пометок</p>
+    <div class="swatches">{colors.map((color) => <div><span style={`background: var(--${color})`}></span><code>{color}</code></div>)}</div>
+    <TypedHeadline text="Собираю свою цифровую жизнь." />
+    <p class="ui-reading">Обычный текст: короткие строки помогают читать длинную статью. Ширина текста ограничена внутри общей сетки страницы. Точки в конце самостоятельных заголовков опускаем, вопросительные и восклицательные знаки сохраняем.</p>
+    <p class="utility">08 сентября 2026 · заметка · 3 записи</p>
+  </section>
+  <section id="controls">
+    <h2>Ссылки, кнопки и темы</h2>
+    <div class="samples"><a href="/archive/">Читать журнал</a><button type="button" class="ui-button">Обычная кнопка</button><button type="button" class="ui-button" disabled>Недоступно</button></div>
+    <p class="utility">Наведите курсор или нажмите Tab, чтобы проверить hover и видимый фокус.</p>
+    <div class="ui-topics"><Tag tag="ai-agents" count={2} href="/tag/ai-agents/" /><Tag tag="homelab" count={2} href="/tag/homelab/" active /><Tag tag="security" /></div>
+    <div class="rule-example"><PencilRule /></div>
+  </section>
+  <section id="editorial">
+    <h2>Редакционная сетка и просмотр рисунка</h2>
+    <div class="ui-editorial has-art">
+      <div>
+        <EditorialNote label="Последнее наблюдение" accent>Факты сохранились, но причина решения потерялась. Это акцентная авторская заметка.</EditorialNote>
+        {project?.stages && <ExperimentTrail stages={project.stages} />}
+        <p class="ui-reading">Нажмите на рисунок или подпись. Проверьте Escape, кнопку закрытия, клик вне окна и возврат фокуса. Без JavaScript ссылка открывает файл.</p>
+      </div>
+      <aside class="ui-editorial-aside">
+        {project?.sketch && <ExperimentSketch sketch={project.sketch} compact />}
+        <EditorialNote label="Открытый вопрос">Что остаётся между разговорами?</EditorialNote>
+      </aside>
+    </div>
+  </section>
+  <section id="entries">
+    <h2>Журнал и изменение мнения</h2>
+    <Listing posts={posts.slice(0, 2)} compact showSummary />
+    {revision && <Revision revision={revision} />}
+  </section>
+</Base>
+<style>
+  section { margin-block-start: var(--space-4); }
+  section > h2 { margin-block-end: var(--space-3); }
+  .swatches, .samples { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-block-end: var(--space-3); align-items: center; }
+  .swatches span { display: block; block-size: 3rem; border: 1px solid var(--rule); margin-block-end: var(--space-1); }
+  .rule-example { margin-block: var(--space-3); }
+</style>

@@ -1,0 +1,52 @@
+---
+interface Props { text: string; }
+const { text } = Astro.props;
+// A sentence's closing period is omitted in a display heading. Keep ? ! and ….
+const title = text.replace(/(?<!\.)\.$/u, '');
+---
+<h1 class="typed-headline" data-typed-headline>
+  <span class="headline-reserve" aria-hidden="true">{title}<span class="cursor-space"></span></span>
+  <span class="headline-display" aria-hidden="true"><span data-typed-text>{title}</span><span class="cursor" aria-hidden="true"></span></span>
+  <span class="sr-only">{title}</span>
+</h1>
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  document.querySelectorAll<HTMLElement>('[data-typed-headline]').forEach((heading) => {
+    const output = heading.querySelector<HTMLElement>('[data-typed-text]')!;
+    const text = output.textContent ?? '';
+    const letters = Array.from(text);
+    let timer: ReturnType<typeof setTimeout>;
+    let index = 0;
+    const finish = () => {
+      clearTimeout(timer);
+      output.textContent = text;
+      heading.classList.remove('typing', 'finished');
+    };
+    const type = () => {
+      output.textContent = letters.slice(0, ++index).join('');
+      if (index < letters.length) timer = setTimeout(type, 45);
+      else {
+        heading.classList.replace('typing', 'finished');
+        timer = setTimeout(finish, 2400);
+      }
+    };
+    if (!reduced.matches) {
+      output.textContent = '';
+      heading.classList.add('typing');
+      timer = setTimeout(type, 180);
+    }
+    reduced.addEventListener('change', (event) => { if (event.matches) finish(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) finish(); });
+  });
+</script>
+<style>
+  .typed-headline { position: relative; max-inline-size: 30ch; font-size: var(--title-page); line-height: 1.1; letter-spacing: -0.035em; margin: 0 0 0.75rem; text-wrap: wrap; }
+  .headline-reserve { visibility: hidden; }
+  .headline-display { position: absolute; inset: 0; }
+  .cursor, .cursor-space { display: inline-block; inline-size: 0.48em; block-size: 0.82em; margin-inline-start: 0.12em; vertical-align: -0.04em; }
+  .cursor { visibility: hidden; background: var(--ink); }
+  .typing .cursor { visibility: visible; }
+  .finished .cursor { visibility: visible; animation: blink 0.8s step-end 3; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .cursor { visibility: hidden !important; animation: none !important; } }
+</style>

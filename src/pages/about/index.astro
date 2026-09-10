@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 
 import Subscribe from '../../components/Subscribe.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
 import Base from '../../layouts/Base.astro';
 import { getPage } from '../../posts.ts';
 import { getAuthor } from '../../site.ts';
@@ -29,7 +30,8 @@ const Content = page ? (await render(page)).Content : null;
   description={page?.data.summary ?? author?.bio ?? 'О себе и о том, как связаться.'}
 >
   <article data-pagefind-body>
-    <h1>{page?.data.title ?? 'О себе'}</h1>
+    <PageHeader title={page?.data.title ?? 'О себе'} />
+    <div class="ui-reading">
 
     {
       author && (
@@ -68,9 +70,10 @@ const Content = page ? (await render(page)).Content : null;
         </dl>
       )
     }
+    </div>
   </article>
 
-  <Subscribe />
+  <div class="ui-reading"><Subscribe /></div>
 </Base>
 
 <style>

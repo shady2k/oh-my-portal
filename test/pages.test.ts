@@ -37,9 +37,24 @@ describe('the workshop and changes of mind', () => {
 beforeAll(() => build({}, OUT), 180_000);
 
 describe('R3: a way to make contact, from any page', () => {
-  it('is in the status line of every page, not only on /about/', () => {
+  it('is in the footer of every page, not only on /about/', () => {
     for (const page of ['index.html', 'posts/published-example/index.html', 'tag/homelab/index.html']) {
       expect(read(page), page).toContain('mailto:test@example.invalid');
+    }
+  });
+});
+
+describe('Shared UI shell', () => {
+  it('uses one frame and an attributed footer on every page type', () => {
+    for (const route of ['index.html', 'projects/index.html', 'about/index.html', 'archive/index.html', 'search/index.html', 'tag/homelab/index.html', 'posts/published-example/index.html']) {
+      const html = read(route);
+      expect(html).toMatch(/<main[^>]*class="frame"/);
+      const footer = html.match(/<footer[\s\S]*?<\/footer>/)?.[0];
+      expect(footer, route).toContain('Тестовый Автор');
+      expect(footer, route).toContain(`© ${new Date().getUTCFullYear()}`);
+      expect(footer, route).toContain('href="/about/"');
+      expect(footer, route).toContain('href="/rss/index.xml"');
+      expect(footer, route).toContain('mailto:test@example.invalid');
     }
   });
 });

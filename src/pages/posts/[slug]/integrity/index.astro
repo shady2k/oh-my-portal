@@ -1,4 +1,5 @@
 ---
+import PageHeader from '../../../../components/ui/PageHeader.astro';
 import Base from '../../../../layouts/Base.astro';
 import { fileHistory, twinHash } from '../../../../history.ts';
 import { listPosts, type Post } from '../../../../posts.ts';
@@ -28,9 +29,8 @@ const file = post.filePath?.split('/').pop() ?? `${post.id}.md`;
   description={`Хеш markdown-твина и история правок файла ${file}.`}
   noindex
 >
-  <p class="file">провенанс · {file}</p>
-
-  <h1>{post.data.title}</h1>
+  <PageHeader title={post.data.title} eyebrow={`Провенанс · ${file}`} />
+  <div class="ui-reading">
 
   <p class="lead">
     Статьи не правятся втихую. Ниже — хеш того, что отдаётся по адресу
@@ -64,6 +64,7 @@ const file = post.filePath?.split('/').pop() ?? `${post.id}.md`;
   }
 
   <p class="back"><a href={`/posts/${post.id}/`}>← к статье</a></p>
+  </div>
 </Base>
 
 <style>
@@ -96,8 +97,8 @@ const file = post.filePath?.split('/').pop() ?? `${post.id}.md`;
   /* A chip, so the two sections read as the two facts they are. */
   .label {
     display: inline-block;
-    background: var(--chip-pkms);
-    border-radius: 0.3em;
+    background: var(--paper-sunk);
+    border: 1px solid var(--rule);
     padding: 0.2em 0.55em;
     margin-block: 0 var(--space-3);
   }
@@ -112,6 +113,7 @@ const file = post.filePath?.split('/').pop() ?? `${post.id}.md`;
 
   .verify,
   .absent {
+    overflow-wrap: anywhere;
     max-inline-size: var(--measure);
     margin-block: 0 var(--space-5);
     color: var(--ink-quiet);
@@ -127,6 +129,7 @@ const file = post.filePath?.split('/').pop() ?? `${post.id}.md`;
 
   .revisions li {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-3);
   }
 

@@ -1,4 +1,5 @@
 ---
+import PageHeader from '../../components/ui/PageHeader.astro';
 import Base from '../../layouts/Base.astro';
 
 /**
@@ -17,7 +18,8 @@ import Base from '../../layouts/Base.astro';
 ---
 
 <Base title="Поиск" description="Поиск по записям: точные имена инструментов и версии." noindex>
-  <h1>Поиск</h1>
+  <PageHeader title="Поиск" />
+  <div class="ui-reading">
 
   <form id="search" role="search" hidden>
     <label class="field-label" for="q">запрос</label>
@@ -50,6 +52,7 @@ import Base from '../../layouts/Base.astro';
   </p>
 
   <ul id="results" class="list"></ul>
+  </div>
 </Base>
 
 <script>

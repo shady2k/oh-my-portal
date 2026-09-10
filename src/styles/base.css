@@ -1,5 +1,6 @@
 @import './tokens.css';
 @import './fonts.css';
+@import './ui.css';
 
 /* Only marginal annotations use handwriting; served from the same origin. */
 @font-face {
@@ -49,18 +50,7 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* --- the reading column --- */
-
-.column {
-  inline-size: min(100% - 2 * var(--space-3), var(--measure));
-  margin-inline: auto;
-}
-
-/*
- * The frame the chrome spans — the two status lines and the listing. Same
- * gutter as .column, so a status line and a paragraph share a left edge on a
- * narrow screen and only diverge once there is room to diverge.
- */
+/* One shared outer frame; use .ui-reading inside it for long prose. */
 .frame {
   inline-size: min(100% - 2 * var(--space-3), var(--frame));
   margin-inline: auto;
@@ -118,7 +108,9 @@ h3 {
 }
 
 h1 {
-  font-size: var(--step-3);
+  font-size: var(--title-page);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
 }
 h2 {
   font-size: var(--step-1);

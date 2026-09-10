@@ -1,0 +1,96 @@
+<dialog id="image-viewer" aria-labelledby="image-viewer-title" data-pagefind-ignore>
+  <div class="viewer-panel">
+    <header class="viewer-toolbar">
+      <h2 id="image-viewer-title">Набросок</h2>
+      <button class="ui-button" type="button" data-viewer-close autofocus>Закрыть <span aria-hidden="true">×</span></button>
+    </header>
+    <div class="viewer-art"></div>
+    <a class="viewer-original" href="#">Открыть оригинал</a>
+  </div>
+</dialog>
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('#image-viewer')!;
+  const art = dialog.querySelector<HTMLElement>('.viewer-art')!;
+  const original = dialog.querySelector<HTMLAnchorElement>('.viewer-original')!;
+  let opener: HTMLAnchorElement | null = null;
+  let previousOverflow = '';
+  let backdropStart = false;
+  const restore = () => {
+    if (!opener) return;
+    document.documentElement.style.overflow = previousOverflow;
+    art.replaceChildren();
+    opener.focus({ preventScroll: true });
+    opener = null;
+  };
+  const dismiss = () => {
+    dialog.close();
+    restore();
+  };
+
+  if (typeof dialog.showModal === 'function') {
+    document.querySelectorAll<HTMLAnchorElement>('[data-image-viewer]').forEach((link) => {
+      link.setAttribute('aria-haspopup', 'dialog');
+      link.setAttribute('aria-controls', dialog.id);
+    });
+    document.addEventListener('click', (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[data-image-viewer]') : null;
+      if (!link || dialog.open) return;
+      const source = link.closest('figure')?.querySelector<HTMLElement>('[data-viewer-art]');
+      if (!source) return;
+      const copy = source.cloneNode(true) as HTMLElement;
+      // Retain the author's annotations, but remove navigation from the enlarged drawing.
+      copy.querySelectorAll('a').forEach((anchor) => anchor.replaceWith(...anchor.childNodes));
+      copy.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+      const img = copy.querySelector('img');
+      if (!img) return;
+      img.removeAttribute('srcset');
+      img.removeAttribute('sizes');
+      img.src = link.href;
+      img.loading = 'eager';
+      event.preventDefault();
+      opener = link;
+      original.href = link.href;
+      art.replaceChildren(copy);
+      previousOverflow = document.documentElement.style.overflow;
+      dialog.showModal();
+      document.documentElement.style.overflow = 'hidden';
+    });
+    dialog.querySelector('[data-viewer-close]')!.addEventListener('click', dismiss);
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      dismiss();
+    });
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key !== 'Tab') return;
+      const close = dialog.querySelector<HTMLButtonElement>('[data-viewer-close]')!;
+      if (event.shiftKey && document.activeElement === close) {
+        event.preventDefault();
+        original.focus();
+      } else if (!event.shiftKey && document.activeElement === original) {
+        event.preventDefault();
+        close.focus();
+      }
+    });
+    dialog.addEventListener('pointerdown', (event) => { backdropStart = event.target === dialog; });
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog && backdropStart) dismiss();
+      backdropStart = false;
+    });
+    dialog.addEventListener('close', () => {
+      if (!dialog.open) restore();
+    });
+  }
+</script>
+<style>
+  dialog { padding: 0; border: 0; max-inline-size: none; max-block-size: none; inline-size: 100%; block-size: 100%; background: transparent; color: var(--ink); }
+  dialog[open] { display: grid; place-items: center; }
+  dialog::backdrop { background: rgb(32 32 30 / 72%); }
+  .viewer-panel { background: var(--paper); padding: var(--space-3); inline-size: min(100% - 2rem, 52rem); max-block-size: calc(100dvh - 2rem); overflow: auto; }
+  .viewer-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-block-end: var(--space-2); }
+  h2 { font-size: var(--step-0); margin: 0; }
+  .viewer-art { inline-size: min(100%, 68dvh); margin-inline: auto; }
+  .viewer-art :global(img) { display: block; inline-size: 100%; block-size: auto; mix-blend-mode: multiply; }
+  .viewer-original { display: block; width: fit-content; margin: var(--space-2) auto 0; font-size: var(--step--1); }
+  @media (max-width: 44rem) { .viewer-panel { padding: var(--space-2); } }
+</style>

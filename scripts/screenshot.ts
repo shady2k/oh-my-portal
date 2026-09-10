@@ -17,10 +17,11 @@
  * skip the revision check. That is what resolveChromium does; on any other
  * platform it returns nothing and playwright uses its own download.
  */
-import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { chromium } from 'playwright';
+import { resolveChromium } from './browser.ts';
 
 const out = process.argv[2] ?? 'screenshots';
 const base = process.argv[3] ?? 'http://127.0.0.1:4321';
@@ -33,6 +34,12 @@ const SHOTS: { path: string; name: string; width: number; height: number }[] = [
   { path: '/posts/reverse-proxy-behind-wireguard/', name: 'article-desktop', width: 1440, height: 900 },
   { path: '/posts/reverse-proxy-behind-wireguard/', name: 'article-mobile', width: 390, height: 844 },
   { path: '/projects/', name: 'projects-desktop', width: 1440, height: 900 },
+  { path: '/projects/', name: 'projects-mobile', width: 390, height: 844 },
+  { path: '/projects/', name: 'projects-small', width: 320, height: 740 },
+  { path: '/about/', name: 'about-desktop', width: 1440, height: 900 },
+  { path: '/about/', name: 'about-mobile', width: 390, height: 844 },
+  { path: '/search/', name: 'search-mobile', width: 390, height: 844 },
+  { path: '/tag/ai-agents/', name: 'tag-desktop', width: 1440, height: 900 },
   { path: '/archive/', name: 'archive-mobile', width: 390, height: 844 },
   { path: '/posts/why-i-stopped-tuning-my-setup/', name: 'revision-desktop', width: 1440, height: 900 },
   { path: '/posts/why-i-stopped-tuning-my-setup/', name: 'revision-mobile', width: 390, height: 844 },
@@ -42,15 +49,6 @@ const SHOTS: { path: string; name: string; width: number; height: number }[] = [
   { path: '/posts/scheduled-volume-backups/', name: 'code-mobile', width: 390, height: 844 },
 ];
 
-/** The nix-store chromium, when there is one. Empty on every other platform. */
-function resolveChromium(): string | undefined {
-  const root = process.env.PLAYWRIGHT_BROWSERS_PATH;
-  if (!root || !existsSync(root)) return undefined;
-  const dir = readdirSync(root).find((entry) => entry.startsWith('chromium-'));
-  if (!dir) return undefined;
-  const binary = join(root, dir, 'chrome-linux64', 'chrome');
-  return existsSync(binary) ? binary : undefined;
-}
 
 mkdirSync(out, { recursive: true });
 
@@ -64,6 +62,14 @@ for (const { path, name, width, height } of SHOTS) {
   const status = response?.status() ?? 0;
   if (status !== 200) failed = true;
   await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => Promise.all(Array.from(document.images, (image) => image.decode().catch(() => {}))));
+  // Ensure offscreen blended drawings have been painted before a full-page capture.
+  for (const image of await page.locator('img').all()) await image.scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    return new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
+  await page.waitForFunction(() => !document.querySelector('[data-typed-headline].typing, [data-typed-headline].finished'));
   const brokenImages = await page.evaluate(() => Array.from(document.images).filter((img) => !img.complete || img.naturalWidth === 0).map((img) => img.src));
   if (brokenImages.length) {
     failed = true;

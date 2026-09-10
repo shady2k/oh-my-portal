@@ -1,13 +1,16 @@
 ---
+import PageHeader from '../components/ui/PageHeader.astro';
 import Base from '../layouts/Base.astro';
 ---
 
 <Base title="Страница не найдена" description="Такого адреса здесь нет." noindex>
-  <h1>404</h1>
+  <PageHeader title="404" />
+  <div class="ui-reading">
   <p>
     Такого адреса здесь нет. Все адреса старого сайта переехали и отвечают
     редиректом — если вы пришли по ссылке и попали сюда, ссылка указывает на
     что-то, чего никогда не было.
   </p>
   <p class="utility"><a href="/">к списку записей</a></p>
+  </div>
 </Base>

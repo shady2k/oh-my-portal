@@ -1,4 +1,6 @@
 ---
+import TypedHeadline from '../components/ui/TypedHeadline.astro';
+import EditorialNote from '../components/ui/EditorialNote.astro';
 import Listing from '../components/Listing.astro';
 import Tag from '../components/Tag.astro';
 import { displayDate } from '../dates.ts';
@@ -24,18 +26,18 @@ const changed = posts.flatMap((post) => (post.data.revisions ?? []).map((revisio
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
-<Base title="Записи" description="Записи о домашней инфраструктуре, инструментах и агентах." wide>
+<Base title="Записи" description="Записи о домашней инфраструктуре, инструментах и агентах.">
   <header class="intro">
     <div class="intro-copy">
     <p class="field-label journal-name">Полевой журнал</p>
-    <h1>{author?.headline ?? 'Идеи, которые стали опытом.'}</h1>
+    <TypedHeadline text={author?.headline ?? 'Идеи, которые стали опытом'} />
     {author?.bio && <p class="intro-text">{author.bio}</p>}
     </div>
     <a class="journal-jump" href="#journal">К свежим записям <span aria-hidden="true">↓</span></a>
   </header>
 
   {(project || latest) && (
-    <section class:list={['feature', { 'has-art': hasArt }]} aria-labelledby="feature-title">
+    <section class:list={['feature', 'ui-editorial', { 'has-art': hasArt }]} aria-labelledby="feature-title">
       <div class="feature-rule"><PencilRule /></div>
       <div class="feature-copy">
         <div class="feature-heading">
@@ -51,13 +53,13 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
             <time datetime={iso(latest!.data.date)}>{displayDate(latest!.data.date)}</time>
             {latest!.data.status === 'draft' && <span>черновик</span>}
         </p>}
-        {project?.observation && <p class="observation"><span class="field-label">Последнее наблюдение</span>{project.observation}</p>}
+        {project?.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.observation}</EditorialNote></div>}
         <a class="read-link" href={project ? `/projects/#${project.slug}` : `/posts/${latest!.id}/`}>{project ? 'Как идёт эксперимент' : 'Читать запись'}</a>
       </div>
       {project && hasArt && (
-        <aside class="feature-art">
+        <aside class="feature-art ui-editorial-aside">
           {project.sketch && <ExperimentSketch sketch={project.sketch} compact />}
-          {project.question && <div class="sketch-note"><p class="utility">Открытый вопрос</p><p>{project.question}</p></div>}
+          {project.question && <div class="sketch-note"><EditorialNote label="Открытый вопрос">{project.question}</EditorialNote></div>}
         </aside>
       )}
     </section>
@@ -97,36 +99,31 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .intro { display: grid; gap: 0.5rem; padding-block: 0.5rem 0.75rem; }
   .intro-copy { min-inline-size: 0; }
   .intro .journal-name { margin-block: 0 0.625rem; text-transform: uppercase; letter-spacing: 0.08em; }
-  .intro h1 { max-inline-size: 30ch; font-size: clamp(2.25rem, 3.65vw, 3.25rem); line-height: 1.1; letter-spacing: -0.035em; margin: 0 0 0.75rem; text-wrap: balance; }
   .intro-text { max-inline-size: 65rem; color: var(--ink-quiet); font-size: 1rem; margin: 0; }
   .journal-jump { justify-self: start; font-size: 0.875rem; padding-block: 0.25rem; }
   .journal-jump span { margin-inline-start: 0.5rem; }
-  .observation { font-size: 1.125rem; line-height: 1.55; max-inline-size: 34rem; border-inline-start: 2px solid var(--accent); padding-inline-start: 1rem; margin-block: 1.5rem; }
-  .observation .field-label { display: block; color: var(--accent); font-size: 0.8125rem; margin-block-end: 0.5rem; }
+  .observation { max-inline-size: 34rem; margin-block: 1.5rem; }
   #journal { padding-block-end: 0; }
   .browse { display: flex; flex-wrap: wrap; gap: 1.75rem 3rem; justify-content: space-between; align-items: center; padding-block: 2.5rem 0; font-size: 0.9375rem; }
   .browse .topics { padding: 0; }
   .follow { display: flex; align-items: center; gap: 1rem; }
   .follow a { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
   .follow p { font-size: 0.875rem; color: var(--ink-quiet); margin: 0.375rem 0 0; }
-  .feature { position: relative; display: grid; align-items: start; gap: clamp(2rem, 4vw, 4rem); padding-block: 1rem 1.75rem; margin-block: 0.25rem 0.75rem; }
+  .feature { position: relative; display: grid; align-items: start; gap: var(--layout-gap); padding-block: 1rem 1.75rem; margin-block: 0.25rem 0.75rem; }
   .feature-rule { position: absolute; inset-inline: 0; inset-block-end: 0; pointer-events: none; }
-  .feature.has-art { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
   .feature-copy { min-inline-size: 0; padding-block-start: 0.5rem; }
   .feature-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin-block-end: 1rem; }
   .feature-heading p { margin: 0; }
   .feature-state { display: flex; align-items: baseline; gap: 0.4rem; }
   .state-dot { inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--accent); align-self: center; margin-inline-end: 0.2rem; }
-  .feature h2 { max-inline-size: 19ch; font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1.12; letter-spacing: -0.04em; margin: 0 0 1rem; }
+  .feature h2 { max-inline-size: 19ch; font-size: var(--title-feature); line-height: 1.12; letter-spacing: -0.04em; margin: 0 0 1rem; }
   .feature h2 a { text-decoration: none; }
   .feature h2 a:hover, .feature h2 a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; }
   .feature-summary { color: var(--ink-quiet); max-inline-size: 33rem; font-size: 1.125rem; line-height: 1.55; margin: 0; }
   .feature-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); }
   .read-link { display: inline-block; font-size: 1rem; margin-block-start: 0.5rem; }
-  .feature-art { min-inline-size: 0; max-inline-size: 25rem; inline-size: 100%; justify-self: end; }
-  .sketch-note { border-inline-start: 1px solid var(--rule); padding-inline-start: 1rem; margin: 0.875rem 0 0; font-size: 0.9375rem; line-height: 1.45; }
-  .sketch-note p { margin: 0; }
-  .sketch-note .utility { margin-block-end: 0.25rem; }
+  .feature-art { min-inline-size: 0; }
+  .sketch-note { margin-block-start: 0.875rem; }
   #journal { min-inline-size: 0; }
   .journal-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1rem; padding-block: 0.75rem 0.625rem; }
   .journal-head h2 { margin: 0; font-family: var(--face-prose); font-size: 1.25rem; font-weight: 600; color: var(--ink); }
@@ -144,7 +141,6 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     .feature-art { order: 1; }
     .feature .observation { order: 2; margin-block: 0; }
     .feature .read-link { order: 3; margin-block-start: 0; justify-self: start; }
-    .intro h1 { font-size: clamp(2.25rem, 8vw, 3rem); }
     .feature h2 { max-inline-size: 22ch; }
     .follow { gap: 0.75rem; }
   }

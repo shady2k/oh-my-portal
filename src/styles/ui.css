@@ -1,0 +1,14 @@
+/* Shared layout primitives. Page-specific CSS may arrange content, not redefine the frame. */
+.ui-reading { inline-size: 100%; max-inline-size: var(--measure); min-inline-size: 0; }
+.ui-editorial { display: grid; align-items: start; gap: var(--layout-gap); }
+.ui-editorial.has-art { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.ui-editorial > * { min-inline-size: 0; }
+.ui-editorial-aside { inline-size: 100%; max-inline-size: var(--illustration-size); justify-self: end; }
+.ui-topics { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-block-size: 2.75rem; padding: 0.5rem 0.875rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); font: inherit; font-size: 0.9375rem; cursor: pointer; }
+.ui-button:hover { border-color: var(--ink); background: var(--paper-sunk); }
+.ui-button:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 44rem) {
+  .ui-editorial.has-art { grid-template-columns: minmax(0, 1fr); }
+  .ui-editorial-aside { max-inline-size: 21rem; justify-self: center; }
+}

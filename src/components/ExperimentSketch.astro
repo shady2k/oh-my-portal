@@ -14,8 +14,8 @@ const nodes = [
 
 <figure class:list={['experiment-sketch', { illustrated: !!sketch.artwork, compact }]}>
   {sketch.artwork ? <>
-    <div class="art-plane">
-    <a class="art-link" href={memoryStudy.src} aria-label="Рассмотреть карандашный рисунок крупнее">
+    <div class="art-plane" data-viewer-art>
+    <a class="art-link" href={memoryStudy.src} data-image-viewer aria-label="Рассмотреть карандашный рисунок крупнее">
       <Image src={memoryStudy} alt={sketch.caption} widths={[480, 800, 1200]} sizes={compact ? '(max-width: 704px) 85vw, 400px' : '(max-width: 704px) 90vw, 520px'} width={1200} format="webp" quality={85} loading="eager" />
     </a>
     {sketch.annotations && <>
@@ -31,7 +31,7 @@ const nodes = [
       </div>
     </>}
     </div>
-    <figcaption class="art-hint"><a href={memoryStudy.src}>
+    <figcaption class="art-hint"><a href={memoryStudy.src} data-image-viewer>
       <svg class="zoom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6.5" /><path d="m15 15 5 5 M7 10 h6 M10 7 v6" /></svg>
       <span>Рассмотреть набросок</span>
     </a></figcaption>

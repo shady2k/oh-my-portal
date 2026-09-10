@@ -10,6 +10,15 @@ const site = process.env.SITE_URL ?? 'https://example.com';
 
 export default defineConfig({
   site,
+  integrations: process.env.UI_KIT === '1' ? [{
+    name: 'field-journal-ui-kit',
+    hooks: {
+      'astro:config:setup': ({ injectRoute }) => {
+        injectRoute({ pattern: '/_ui/', entrypoint: './src/ui-kit/index.astro' });
+        injectRoute({ pattern: '/_ui/index.md', entrypoint: './src/ui-kit/index.md.ts' });
+      },
+    },
+  }] : [],
   server: {
     /*
      * `127.0.0.1`, not the default `localhost`.

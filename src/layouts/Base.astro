@@ -2,26 +2,10 @@
 import { getAuthor } from '../site.ts';
 import '../styles/base.css';
 
-/**
- * The page shell — design §5 (addresses and hreflang) and §12.
- *
- * A name, four links, and then the writing. That is the shape every blog worth
- * copying converges on: danluu.com ships 22KB of HTML and no stylesheet at all
- * and opens straight into its list; eli.thegreenplace.net gives three links;
- * jvns.ca a name and a sentence. None of them has a status bar, a file path
- * under a title, a reading time or a row of machine addresses.
- *
- * An earlier shell here had all of those. Each was defensible on its own — every
- * value was real, nothing was invented — and together they were seven pieces of
- * furniture around two articles, competing with the only thing anyone came for.
- * Honest is not the same as necessary.
- *
- * The machine surface is gone from the page on purpose, and §6 is the reason: an
- * agent never renders this HTML. It arrives with `Accept: text/markdown`, or it
- * reads `<link rel="alternate">` in the head, or it follows the `Link:` header
- * nginx adds. A row of `.md /index.json /llms.txt` links reached none of them
- * and cost every human reader a line.
- */
+import SiteFooter from '../components/ui/SiteFooter.astro';
+import ImageViewer from '../components/ui/ImageViewer.astro';
+
+/** One outer frame on every page; reading measures belong to the content. */
 interface Props {
   title: string;
   description: string;
@@ -31,20 +15,10 @@ interface Props {
   noindex?: boolean;
   /** A narrower feed than /rss/ — a tag page advertises its own (R6). */
   feed?: string;
-  /**
-   * Listings span the frame the chrome spans; prose never does.
-   *
-   * A status line that crosses the screen above a column half its width reads as
-   * a bar bolted onto a narrow blog — the right end of it floats away from
-   * anything it could belong to. A listing at the same width closes that gap:
-   * the dates line up under the state on the status line, and the two are
-   * visibly one surface. Articles stay at --measure, because a 62rem line of
-   * Russian prose is unreadable and that is the whole point of the column.
-   */
-  wide?: boolean;
+
 }
 
-const { title, description, lang = 'ru', noindex = false, feed, wide = false } = Astro.props;
+const { title, description, lang = 'ru', noindex = false, feed } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 /*
@@ -103,17 +77,12 @@ const sections = [
       </nav>
     </header>
 
-    <main id="main" class={wide ? 'frame' : 'column'}>
+    <main id="main" class="frame">
       <slot />
     </main>
 
-    {/* R3 and R6, and nothing else. The machine finds its own way in (§6). */}
-    <footer class="frame">
-      <p class="colophon">
-        {author && <a href={author.contact.href}>{author.contact.label}</a>}
-        <a href="/rss/">rss</a>
-      </p>
-    </footer>
+    <SiteFooter author={author} />
+    <ImageViewer />
 
     <script>
       /*
@@ -128,7 +97,7 @@ const sections = [
 
       document.addEventListener('keydown', (event) => {
         if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
-        if (typing(document.activeElement)) return;
+        if (typing(document.activeElement) || document.querySelector('dialog[open]')) return;
 
         const box = document.querySelector<HTMLInputElement>('#q');
         event.preventDefault();
@@ -167,8 +136,7 @@ const sections = [
    * Name on the left, sections on the right, one line, no rule under it. A rule
    * would draw a box around the page; the space below is enough of a boundary.
    */
-  .masthead,
-  .colophon {
+  .masthead {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -208,26 +176,8 @@ const sections = [
     .wordmark { padding-block-start: var(--space-2); }
   }
 
-  .colophon {
-    gap: var(--space-3);
-    margin-block-start: var(--space-3);
-    padding-block-start: var(--space-2);
-    border-block-start: 1px solid var(--rule);
-  }
-
-  .masthead a,
-  .colophon a {
-    text-decoration: none;
-  }
-
-  .masthead a:hover,
-  .masthead a:focus-visible,
-  .colophon a:hover,
-  .colophon a:focus-visible {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.18em;
-  }
+  .masthead a { text-decoration: none; }
+  .masthead a:hover, .masthead a:focus-visible { text-decoration: underline; }
 
   .masthead a.here {
     color: var(--ink);

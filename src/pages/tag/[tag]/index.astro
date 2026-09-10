@@ -1,21 +1,10 @@
 ---
 import Listing from '../../../components/Listing.astro';
-import Mark from '../../../components/Mark.astro';
+import PageHeader from '../../../components/ui/PageHeader.astro';
+import Tag from '../../../components/Tag.astro';
 import Base from '../../../layouts/Base.astro';
-import { getAuthor } from '../../../site.ts';
 import { listPosts, listTags } from '../../../posts.ts';
 
-/**
- * `/tag/<tag>/` — design §5.
- *
- * Only tags that are actually in use get a page. A tag with no posts would be a
- * 200 that says nothing, and the redirect map already sends the old empty tags
- * somewhere useful.
- *
- * The page is the front page with one chip lit. There is no second heading
- * announcing the tag: the lit chip already says which filter is on, and a
- * heading repeating it would be the same word twice in a row.
- */
 export async function getStaticPaths() {
   const posts = await listPosts();
   const tags = await listTags();
@@ -25,14 +14,13 @@ export async function getStaticPaths() {
   }));
 }
 
-const { tag, posts, tags, total } = Astro.props;
-const author = await getAuthor();
+const { tag, posts, tags } = Astro.props;
 ---
 
-<Base title={`Тема: ${tag}`} description={`Записи по теме ${tag}.`} feed={`/feeds/${tag}.xml`} wide>
-  <h1 class="sr-only">Тема: {tag}</h1>
-
-  <Mark name={author?.name} tags={tags} total={total} active={tag} />
+<Base title={`Тема: ${tag}`} description={`Записи по теме ${tag}.`} feed={`/feeds/${tag}.xml`}>
+  <PageHeader title={`Тема: ${tag}`} eyebrow="Журнал">
+    <nav class="ui-topics" aria-label="Темы"><a href="/archive/">Все записи</a>{tags.map((item) => <Tag tag={item.tag} count={item.count} href={`/tag/${item.tag}/`} active={item.tag === tag} />)}</nav>
+  </PageHeader>
 
   <Listing posts={posts} />
 

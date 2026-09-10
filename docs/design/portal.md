@@ -598,6 +598,32 @@ or it becomes a second job.
 
 ## 12. Design system
 
+### Shared UI kit (2026-09-10)
+
+The component contracts and live catalog are maintained in
+[`src/components/ui/README.md`](../../src/components/ui/README.md). Run `npm run ui`
+and open `/_ui/` on port 4324. The catalog renders the same Astro components as
+real pages and is absent from ordinary production builds. Storybook is not a
+runtime dependency; the catalog covers this site's current component states.
+
+All pages share one `--frame` outer shell, including projects, about and search.
+Readable prose is constrained to `--measure` inside it. Page headings,
+observations, project/home editorial columns, image size and footer use shared
+components and tokens. Project art is bounded, not expanded to the prose width.
+
+Drawing and caption open one native modal with the authored annotations intact.
+Escape, close button and backdrop dismiss it; focus returns to the trigger.
+The underlying links open the original image when JavaScript is unavailable.
+The shared footer uses the configured author's name and contact, the build year,
+about and RSS links. Publication licenses are not inferred from the engine's license.
+
+The opening headline has a brief typing effect with a square cursor. Reserve its
+full dimensions before animating, expose the complete text to assistive technology,
+and show static text with reduced motion or without JavaScript. Cursor blinking
+stops after three cycles. Omit a single terminal period in this display heading;
+retain question/exclamation marks and ellipses. Body text and source projections
+keep their original punctuation.
+
 ### Approved field journal direction (2026-09-09)
 
 The maintainer selected the light field journal concept. This decision supersedes

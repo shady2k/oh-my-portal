@@ -2,6 +2,8 @@
 import { render } from 'astro:content';
 
 import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/ui/PageHeader.astro';
+import EditorialNote from '../../components/ui/EditorialNote.astro';
 import ExperimentSketch from '../../components/ExperimentSketch.astro';
 import ExperimentTrail from '../../components/ExperimentTrail.astro';
 import { displayDate } from '../../dates.ts';
@@ -28,32 +30,35 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   description={page?.data.summary ?? 'Реестр проектов с состоянием каждого.'}
 >
   <article data-pagefind-body>
-    <h1>{page?.data.title ?? 'Проекты'}</h1>
+    <PageHeader title={page?.data.title ?? 'Проекты'} />
 
-    {Content && <div class="prose"><Content /></div>}
+    {Content && <div class="prose ui-reading"><Content /></div>}
 
     <ul class="register">
       {
         projects.map((project) => (
           <li id={project.slug}>
-            <p class="head">
-              <span class="name">{project.name}</span>
-              <span class={`state state-${project.state}`}>{STATE_LABEL[project.state]}</span>
-              {project.since && (
-                <time class="utility" datetime={iso(project.since)}>
-                  с {displayDate(project.since)}
-                </time>
-              )}
-            </p>
-            <p class="summary">{project.summary}</p>
-            {project.stages && <ExperimentTrail stages={project.stages} />}
-            {project.observation && <p>{project.observation}</p>}
-            {project.sketch && <ExperimentSketch sketch={project.sketch} />}
-            {project.question && <p class="question">Открытый вопрос: {project.question}</p>}
-            <p class="links utility" data-pagefind-ignore>
-              {project.repo && <a href={project.repo}>исходники</a>}
-              {project.site && <a href={project.site}>сайт</a>}
-            </p>
+            <div class:list={['ui-editorial', { 'has-art': !!project.sketch }]}>
+              <div>
+                <div class="project-meta utility">
+                  <span class={`state state-${project.state}`}>{STATE_LABEL[project.state]}</span>
+                  {project.since && <time datetime={iso(project.since)}>с {displayDate(project.since)}</time>}
+                </div>
+                <h2>{project.name}</h2>
+                <p class="summary ui-reading">{project.summary}</p>
+                {project.stages && <ExperimentTrail stages={project.stages} />}
+                {project.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.observation}</EditorialNote></div>}
+                {!project.sketch && project.question && <div class="question"><EditorialNote label="Открытый вопрос">{project.question}</EditorialNote></div>}
+                {(project.repo || project.site) && <p class="links" data-pagefind-ignore>
+                  {project.repo && <a href={project.repo}>Исходники</a>}
+                  {project.site && <a href={project.site}>Сайт проекта</a>}
+                </p>}
+              </div>
+              {project.sketch && <aside class="ui-editorial-aside">
+                <ExperimentSketch sketch={project.sketch} compact />
+                {project.question && <div class="question"><EditorialNote label="Открытый вопрос">{project.question}</EditorialNote></div>}
+              </aside>}
+            </div>
           </li>
         ))
       }
@@ -64,62 +69,15 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 </Base>
 
 <style>
-  .register {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .register > li + li {
-    margin-block-start: var(--space-3);
-    padding-block-start: var(--space-3);
-    border-block-start: 1px solid var(--rule);
-  }
-
-  .head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-2);
-    margin: 0;
-  }
-
-  .name {
-    font-weight: 600;
-  }
-
-  /*
-   * The state is the register's whole point (§12), and it is set in brackets
-   * rather than in a coloured chip: five pastel fills would have to encode an
-   * order — active is better than paused is better than archived — that colour
-   * cannot carry without a legend nobody reads. The word says it outright.
-   */
-  .state {
-    font-family: var(--face-utility);
-    font-size: var(--step--1);
-    color: var(--ink);
-  }
-
-  .state::before {
-    content: '[';
-  }
-
-  .state::after {
-    content: ']';
-  }
-
-  /* The one state that is not news: a finished project recedes. */
-  .state-archived {
-    color: var(--ink-quiet);
-  }
-
-  .summary {
-    margin-block: var(--space-1);
-  }
-
-  .links {
-    display: flex;
-    gap: var(--space-3);
-    margin: 0;
-  }
+  .register { list-style: none; padding: 0; margin: 0; }
+  .register > li + li { margin-block-start: var(--space-4); padding-block-start: var(--space-4); border-block-start: 1px solid var(--rule); }
+  .project-meta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); margin-block-end: 1rem; }
+  h2 { font-size: var(--title-feature); max-inline-size: 22ch; margin: 0 0 1rem; }
+  .ui-editorial:not(.has-art) h2 { font-size: var(--step-2); max-inline-size: var(--measure); }
+  .state { color: var(--ink); }
+  .state-archived { color: var(--ink-quiet); }
+  .summary { color: var(--ink-quiet); font-size: 1.125rem; line-height: 1.55; }
+  .observation { margin-block: var(--space-3); }
+  .question { margin-block: 1rem; }
+  .links { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-3) 0 0; }
 </style>

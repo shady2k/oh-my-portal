@@ -1,4 +1,5 @@
 ---
+import PageHeader from '../../components/ui/PageHeader.astro';
 import Base from '../../layouts/Base.astro';
 import Listing from '../../components/Listing.astro';
 import Tag from '../../components/Tag.astro';
@@ -6,14 +7,10 @@ import { listPosts, listTags } from '../../posts.ts';
 const posts = await listPosts();
 const tags = await listTags();
 ---
-<Base title="Весь журнал" description="Все статьи, заметки и эксперименты." wide>
-  <header class="archive-header"><p class="field-label">Архив мастерской</p><h1>Весь журнал</h1>
-  <nav aria-label="темы">{tags.map(({ tag, count }) => <Tag tag={tag} count={count} href={`/tag/${tag}/`} />)}</nav></header>
+<Base title="Весь журнал" description="Все статьи, заметки и эксперименты.">
+  <PageHeader title="Весь журнал" eyebrow="Архив мастерской">
+    <nav class="ui-topics" aria-label="Темы">{tags.map(({ tag, count }) => <Tag tag={tag} count={count} href={`/tag/${tag}/`} />)}</nav>
+  </PageHeader>
   <Listing posts={posts} />
   {!posts.length && <p>Записей пока нет.</p>}
 </Base>
-<style>
-  .archive-header { padding-block: 2rem; }
-  h1 { margin-block: 0 1.5rem; }
-  nav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-</style>
