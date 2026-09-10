@@ -71,7 +71,7 @@
 
   /* --- scale --- */
   --title-page: clamp(2.25rem, 3.65vw, 3.25rem);
-  --title-feature: clamp(2rem, 3vw, 2.75rem);
+  --title-feature: clamp(1.6875rem, 2.2vw, 2.125rem);
   --layout-gap: clamp(2rem, 4vw, 4rem);
   --illustration-size: 25rem;
   --measure: 40rem; /* the reading column; everything else is margin */

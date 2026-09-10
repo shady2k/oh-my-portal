@@ -48,7 +48,7 @@ const colors = ['paper', 'paper-sunk', 'ink', 'ink-quiet', 'rule', 'accent'];
       </div>
       <aside class="ui-editorial-aside">
         {project?.sketch && <ExperimentSketch sketch={project.sketch} compact />}
-        <EditorialNote label="Открытый вопрос">Что остаётся между разговорами?</EditorialNote>
+        <EditorialNote label="Заметка на полях">Что остаётся между разговорами?</EditorialNote>
       </aside>
     </div>
   </section>
@@ -56,6 +56,7 @@ const colors = ['paper', 'paper-sunk', 'ink', 'ink-quiet', 'rule', 'accent'];
     <h2>Журнал и изменение мнения</h2>
     <Listing posts={posts.slice(0, 2)} compact showSummary />
     {revision && <Revision revision={revision} />}
+    {revision && <Revision revision={revision} insert />}
   </section>
 </Base>
 <style>

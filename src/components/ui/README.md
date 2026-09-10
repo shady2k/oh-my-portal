@@ -17,12 +17,12 @@ catalog can be built with `UI_KIT=1 npm run build:examples`.
 | `ThemeInit.astro`, `ThemePicker.astro` | Pre-paint choice, system/light/dark segmented radio control, safe persistence and cross-tab sync |
 | `PageHeader.astro` | Page title, optional eyebrow, description and navigation slot |
 | `TypedHeadline.astro` | Complete accessible heading, reserved height, brief typing and square cursor; static without JS or with reduced motion |
-| `EditorialNote.astro` | Quiet question or red authored observation, label and body slot |
+| `EditorialNote.astro` | Quiet note or red-barred authored observation, label and body slot |
 | `SiteFooter.astro` | Configured author, build year, about, contact and RSS; no invented license |
 | `ImageViewer.astro` | One native dialog in Base, opened by image links; close, Escape, backdrop, focus restoration |
 | `../ExperimentSketch.astro` | The drawing, authored annotations and image-viewer triggers; original-image fallback |
 | `../ExperimentTrail.astro` | Done/current/next stages with published evidence links |
-| `../Tag.astro` | Outlined topic; optional count and active state |
+| `../Tag.astro` | Underlined topic word; optional count and active state |
 | `../Listing.astro` | Journal rows, compact or full metadata |
 | `../PencilRule.astro`, `../Revision.astro` | Graphite separation and authored before/after comparison |
 

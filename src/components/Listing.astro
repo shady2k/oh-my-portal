@@ -3,7 +3,6 @@ import { type Post } from '../posts.ts';
 import { articleMarkdown } from '../projections.ts';
 import Tag from './Tag.astro';
 import { displayDate } from '../dates.ts';
-import PencilRule from './PencilRule.astro';
 
 /**
  * The archive: date, title, and what the article weighs to a machine.
@@ -40,7 +39,7 @@ const size = (post: Post) => {
 
 <ul class:list={['listing', { compact }]}>
   {
-    posts.map((post, index) => (
+    posts.map((post) => (
       <li>
         <div class="date-group">
         <time class="date" datetime={iso(post.data.date)} title={displayDate(post.data.date)}>
@@ -69,7 +68,6 @@ const size = (post: Post) => {
             <Tag tag={tag} href={`/tag/${tag}/`} />
           ))}
         </p>}
-        {compact && index < posts.length - 1 && <div class="entry-rule"><PencilRule /></div>}
       </li>
     ))
   }
@@ -107,11 +105,17 @@ const size = (post: Post) => {
     max-inline-size: var(--measure);
   }
   .year { display: block; font-size: 0.75rem; margin-block-start: 0.2rem; }
-  .compact li { position: relative; grid-template-columns: 10rem minmax(0, 1fr); padding-block: 1.5rem; border-block-end: 0; }
-  .entry-rule { position: absolute; inset-inline: 0; inset-block-end: -6px; pointer-events: none; }
+  /*
+   * Rows part with the same straight hairline as everywhere else. The pencil
+   * stroke is the page's one hand-drawn rule and it is spent on the seam
+   * between the experiment and the journal; repeating it here would make it a
+   * pattern rather than a mark.
+   */
+  .compact li { grid-template-columns: 8.75rem minmax(0, 1fr); padding-block: 1.25rem; }
+  .compact li:last-child { border-block-end: 0; }
   .compact-meta { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; margin: 0.25rem 0 0; font-family: var(--face-utility); font-size: 0.75rem; color: var(--ink-quiet); }
   .compact .title { font-size: 1.25rem; }
-  .compact .summary { font-size: 1.0625rem; max-inline-size: 48rem; line-height: 1.55; }
+  .compact .summary { font-size: 1.0625rem; max-inline-size: 44rem; line-height: 1.55; }
   .compact .year { display: inline; font-size: inherit; margin: 0; }
 
   /*
@@ -159,7 +163,8 @@ const size = (post: Post) => {
     font-size: var(--step--1);
     font-family: var(--face-utility);
   }
-  .kind { border: 1px solid var(--rule); padding: 0.1em 0.5em; }
+  /* The kind is a word beside the size, not a boxed badge: nothing else in the metadata wears a frame. */
+  .kind { color: var(--ink-quiet); }
   .being { color: var(--being); }
 
   /*
@@ -180,7 +185,7 @@ const size = (post: Post) => {
   }
   @container (max-width: 52rem) {
     li { grid-template-columns: 7rem minmax(0, 1fr); }
-    .compact li { grid-template-columns: 10rem minmax(0, 1fr); }
+    .compact li { grid-template-columns: 8.75rem minmax(0, 1fr); }
     .meta { grid-column: 2; justify-content: flex-start; margin-block-start: 0.75rem; }
   }
   @container (max-width: 30rem) {

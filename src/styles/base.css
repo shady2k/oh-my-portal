@@ -68,13 +68,15 @@ body {
 }
 
 /*
- * Utility-style field labels instead of decorative subheadings: the label says
- * what the value is, and gets out of the way.
+ * Editorial field labels: the label says what the value is, and gets out of the
+ * way. They speak in the prose face, small and quiet — the monospace face is
+ * reserved for data (dates, sizes, tags), so a label never looks like a value.
  */
 .field-label {
-  font-family: var(--face-utility);
-  font-size: var(--step--1);
-  font-weight: 400;
+  font-family: var(--face-prose);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
   color: var(--ink-quiet);
 }
 

@@ -641,7 +641,7 @@ keep their original punctuation.
 The maintainer selected the light field journal concept. This decision supersedes
 the earlier visual prescription below: warm off-white paper, large sans headings,
 one red editorial accent, fine rules and contextual notes in a wide margin.
-Tags are neutral outlined labels. The header carries the configured author name;
+Tags are neutral labels (outlined at first; unboxed words since the quiet pass). The header carries the configured author name;
 the homepage opening uses optional `author.headline` and the existing bio.
 
 The opening is compact enough to reach actual writing quickly. The newest post
@@ -672,7 +672,7 @@ authored in the original article, not inferred from troubleshooting data.
 See [the content contract](../workshop-content.md) for optional fields, validation,
 fallbacks and the publication workflow.
 
-Visible editorial dates use Russian month names (`08 сентября`), with full dates
+Visible editorial dates use Russian month names (`8 сентября`, unpadded since the quiet pass below), with full dates
 on homepage entries and detail pages. UTC
 keeps the displayed day aligned with ISO `datetime` and unchanged machine data.
 The homepage archive is compact: date and kind share a left margin, followed by
@@ -737,6 +737,57 @@ The experiment summary and observation both use 18px text, with the observation
 in dark ink. The RSS invitation is an 18px semibold link with the short explanation
 "Новые записи через RSS." Keyboard focus keeps the shared visible outline, and
 the experiment heading underlines on focus as well as hover.
+
+The rank review (2026-09-10) gives the homepage three levels instead of one.
+The feature title drops to 27–34px so the page headline is the single dominant
+voice on the first screen, and the biography takes a 44rem measure rather than
+the full frame. The project's open question leaves the illustration rail — where
+it read as a footnote to the drawing and stretched that column past the copy,
+leaving a dead zone under the read link — and becomes the experiment block's own
+closing line across the full width. A change of mind is a sunk insert: paper one
+step darker, its own air, and no rule, because next to the journal listing the
+same graphite hairline every block uses gave the page's most distinctive content
+the rank of a row of links. The insert bleeds into the page gutter by what the
+gutter has to spare, so its text keeps the shared left alignment; on a phone the
+gutter is the whole margin and the insert runs edge to edge. Inside an article a
+revision keeps the plain form with its pencil rule — the piece around it already
+supplies the context the ground would otherwise have to. Compact entry dates get
+a margin the width of the longest date instead of two rem more. Both
+illustrations stay.
+
+The quiet pass (2026-09-10, later the same day) removes devices rather than
+adding any. The screenshot review found the field-journal concept sound but
+speaking in too many voices at once, and each cut below has one reason.
+
+- **Labels.** Editorial labels are set in the prose face, small and quiet;
+  the monospace face is reserved for data — dates, sizes, tags — so a label
+  never looks like a value. The one exception is the uppercase journal masthead,
+  which is a stamp on the cover. The project's open question has no label: its
+  question mark and the page's only italic say what it is. The experiment label
+  and its stage share one line, without a coloured dot. The topics row is
+  labelled "Темы журнала".
+- **Red.** Red is the author's hand and nothing else: the observation bar, the
+  drawing annotations and the underline beneath the revised position. The theme
+  control marks its active choice in ink; the observation's label is quiet ink,
+  because the bar beside it already carries the mark. Keyboard focus keeps the
+  accent outline — it is an interaction affordance, not a design mark.
+- **Rules.** The pencil stroke is the page's one hand-drawn rule, spent on the
+  seam between the experiment and the journal. Everything else — rows, the
+  revision, the footer — parts with the same straight hairline. Repeating the
+  stroke between rows had turned a mark into a pattern.
+- **The revision insert** loses its sunk ground and sits on the page paper,
+  aligned to the shared text edge, introduced by a straight rule and air. This
+  supersedes the rank review's pasted-slip ground: a full-width band was the
+  heaviest mass on the page and competed with the illustration, which is the
+  content and should be the one bold thing. The insert still outranks a listing
+  row by scale — its comparison is the largest text below the headline. The
+  `--paper-sunk` token remains for other consumers.
+- **Details.** Visible dates drop the leading zero (`8 сентября`): a person
+  writes the day that way, a machine pads it; tabular figures keep the listing
+  aligned. The journal head links to "Весь журнал" without a count. Tags are
+  underlined words in the data face with a quiet count, not boxed chips, and the
+  kind beside the size in full listings is likewise unboxed — nothing in the
+  metadata wears a frame.
 
 ### Previous direction (historical rationale)
 
