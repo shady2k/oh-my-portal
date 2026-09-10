@@ -29,7 +29,7 @@ const Content = page ? (await render(page)).Content : null;
   description={page?.data.summary ?? author?.bio ?? 'О себе и о том, как связаться.'}
 >
   <article data-pagefind-body>
-    <h1 class="highlight"><span>{page?.data.title ?? 'О себе'}</span></h1>
+    <h1>{page?.data.title ?? 'О себе'}</h1>
 
     {
       author && (

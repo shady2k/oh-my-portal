@@ -1,0 +1,27 @@
+---
+import type { Project } from '../schema/site.ts';
+interface Props { stages: NonNullable<Project['stages']>; }
+const { stages } = Astro.props;
+const stateLabels = { done: 'завершено', current: 'текущий этап', next: 'впереди' };
+---
+<ol class="trail" aria-label="История эксперимента">
+  {stages.map((stage, i) => <li class={stage.state} aria-current={stage.state === 'current' ? 'step' : undefined}>
+    <span class="step-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+    {stage.post ? <a href={`/posts/${stage.post}/`}>{stage.title}</a> : <span>{stage.title}</span>}
+    <span class="state">{stateLabels[stage.state]}</span>
+  </li>)}
+</ol>
+<style>
+  .trail { list-style: none; display: flex; flex-wrap: wrap; gap: 1.5rem 0; padding: 0; margin: 2rem 0; }
+  li { position: relative; flex: 1 1 7rem; min-inline-size: 0; padding: 1rem 1rem 0 0; border-block-start: 1px solid var(--rule); font-size: 0.9375rem; }
+  li::before { content: ''; position: absolute; inset-block-start: -4px; inline-size: 7px; block-size: 7px; border-radius: 50%; background: var(--ink); }
+  .current::before { background: var(--accent); box-shadow: 0 0 0 4px var(--paper-sunk); }
+  .next::before { background: var(--paper); border: 1px solid var(--ink-quiet); }
+  .step-number, .state { display: block; font-family: var(--face-utility); font-size: 0.6875rem; color: var(--ink-quiet); }
+  .step-number { margin-block-end: 0.5rem; }
+  .state { margin-block-start: 0.4rem; }
+  .current .state { color: var(--accent); }
+  .next { color: var(--ink-quiet); }
+  a { text-decoration-color: var(--ink-quiet); }
+  @media (max-width: 34rem) { li { flex-basis: 50%; } }
+</style>

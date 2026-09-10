@@ -1,5 +1,6 @@
 ---
 import type { Frontmatter } from '../schema/frontmatter.ts';
+import { displayDate } from '../dates.ts';
 
 /**
  * The article core — design §6.
@@ -26,7 +27,7 @@ const verified = recipe.verified_on.toISOString().slice(0, 10);
     <dd>{recipe.goal}</dd>
 
     <dt class="field-label">проверено</dt>
-    <dd><time datetime={verified} class="utility">{verified}</time></dd>
+    <dd><time datetime={verified} class="utility">{displayDate(recipe.verified_on)}</time></dd>
 
     {
       recipe.stack?.length && (
@@ -118,6 +119,7 @@ const verified = recipe.verified_on.toISOString().slice(0, 10);
 
   dd {
     margin: 0;
+    min-inline-size: 0;
   }
 
   .plain {
@@ -140,5 +142,10 @@ const verified = recipe.verified_on.toISOString().slice(0, 10);
 
   .note {
     display: block;
+  }
+
+  @media (max-width: 34rem) {
+    dl { grid-template-columns: minmax(0, 1fr); }
+    dt:not(:first-child) { margin-block-start: 1rem; }
   }
 </style>

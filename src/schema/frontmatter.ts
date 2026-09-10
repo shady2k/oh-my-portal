@@ -80,6 +80,13 @@ export const frontmatter = z
     /** Old addresses this entry answers to, for URL preservation on rename. */
     aliases: z.array(z.string().regex(PATH, 'site-absolute path with a trailing slash')).optional(),
     updated: z.coerce.date().optional(),
+    /** Authored changes of mind; original prose remains intact. */
+    revisions: z.array(z.strictObject({
+      date: z.coerce.date(),
+      before: z.string().min(1).max(300),
+      after: z.string().min(1).max(300),
+      reason: z.string().min(1).max(600),
+    })).min(1).optional(),
     tools: z.array(toolRef).optional(),
     sources: z.array(z.url()).optional(),
     related: z.array(slug).optional(),
@@ -92,7 +99,10 @@ export const frontmatter = z
   .refine((d) => !d.related?.includes(d.slug), {
     error: '`related` cannot list the entry itself',
     path: ['related'],
+  })
+  .refine((d) => !d.revisions || d.revisions.every((r) => r.date >= d.date && !!d.updated && r.date <= d.updated), {
+    error: 'Revisions must fall between publication and the updated date',
+    path: ['revisions'],
   });
 
 export type Frontmatter = z.infer<typeof frontmatter>;
-

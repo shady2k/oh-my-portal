@@ -22,12 +22,18 @@ export function build(env: Record<string, string>, out: string) {
   execFileSync('node', ['scripts/check-outputs.ts', out], options);
 }
 
+/*
+ * Charsets included on purpose: the test server stands in for nginx, and the one
+ * that was missing there was missing here too, so no test could have caught it.
+ * A server that is more forgiving than production is a server that hides bugs.
+ */
 const TYPES: Record<string, string> = {
-  '.js': 'text/javascript',
+  '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json',
-  '.css': 'text/css',
-  '.html': 'text/html',
-  '.md': 'text/markdown',
+  '.css': 'text/css; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
   '.pagefind': 'application/wasm',
 };
 

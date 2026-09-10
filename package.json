@@ -5,14 +5,15 @@
   "private": true,
   "description": "An ai-first publishing engine: markdown with frontmatter in git, built for an agent publishing pipeline.",
   "scripts": {
-    "dev": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro dev",
+    "dev": "PREVIEW=1 CONTENT_DIR=examples/posts DATA_DIR=examples/data astro dev",
     "build": "astro build && pagefind --site dist && node scripts/check-outputs.ts",
     "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro build && pagefind --site dist && node scripts/check-outputs.ts",
     "preview": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro preview",
     "check": "CONTENT_DIR=examples/posts DATA_DIR=examples/data astro check",
     "redirects": "node scripts/gen-redirects.ts",
-    "test": "vitest run",
-    "verify": "npm run check && npm run test"
+    "test": "vitest run --no-file-parallelism",
+    "verify": "npm run check && npm run test",
+    "screenshot": "node scripts/screenshot.ts"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
@@ -25,6 +26,7 @@
     "@types/node": "^26.5.0",
     "fast-xml-parser": "^5.11.1",
     "pagefind": "^1.5.2",
+    "playwright": "^1.63.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
   }

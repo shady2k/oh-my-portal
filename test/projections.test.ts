@@ -7,7 +7,41 @@ import {
   catalogueMarkdown,
   indexJson,
   llmsTxt,
+  projectsMarkdown,
 } from '../src/projections.ts';
+import { project as projectSchema } from '../src/schema/site.ts';
+
+describe('illustrated project content', () => {
+  it('requires evidence for active stages and rejects two current stages', () => {
+    const base = { slug: 'example', name: 'Example', summary: 'Synthetic', state: 'active' };
+    expect(projectSchema.safeParse({ ...base, stages: [{ title: 'Done', state: 'done' }, { title: 'Next', state: 'next' }] }).success).toBe(false);
+    expect(projectSchema.safeParse({ ...base, stages: ['One', 'Two'].map((title) => ({ title, state: 'current', post: 'example' })) }).success).toBe(false);
+  });
+  const data = {
+    slug: 'example', name: 'Example', summary: 'Synthetic experiment', state: 'experiment',
+    question: 'What changes?',
+    sketch: { center: 'agent', labels: ['memory', 'experience', 'initiative', 'character'], caption: 'Four influences on the agent.' },
+  };
+  it('keeps the diagram explanation and open question in the machine version', () => {
+    const parsed = projectSchema.parse(data);
+    const md = projectsMarkdown([parsed], { experiment: 'experiment' });
+    expect(md).toContain(data.question);
+    expect(md).toContain(data.sketch.caption);
+  });
+  it('rejects incomplete or oversized labels that cannot fit the sketch', () => {
+    expect(projectSchema.safeParse({ ...data, sketch: { ...data.sketch, labels: ['one'] } }).success).toBe(false);
+    expect(projectSchema.safeParse({ ...data, sketch: { ...data.sketch, center: 'x'.repeat(19) } }).success).toBe(false);
+  });
+  it('keeps pencil annotations in Markdown and requires their matching artwork', () => {
+    const annotations = ['Facts survived', 'Still testing', 'Context breaks here'];
+    const sketch = { ...data.sketch, artwork: 'memory-study', annotations };
+    const parsed = projectSchema.parse({ ...data, sketch });
+    const md = projectsMarkdown([parsed], { experiment: 'experiment' });
+    for (const annotation of annotations) expect(md).toContain(annotation);
+    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, artwork: undefined } }).success).toBe(false);
+    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, annotations: ['One'] } }).success).toBe(false);
+  });
+});
 
 const SITE = new URL('https://example.com/');
 

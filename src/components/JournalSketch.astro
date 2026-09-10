@@ -1,0 +1,21 @@
+<!-- A small companion to the RSS link: pages becoming a broadcast.
+     Decorative; the adjacent link supplies the accessible name. -->
+<svg class="journal-sketch" viewBox="0 0 120 100" fill="none" aria-hidden="true" focusable="false">
+  <g class="graphite">
+    <path d="M13 35 Q34 28 57 42 Q76 26 100 31 L104 77 Q79 72 60 87 Q36 73 16 80 Z" />
+    <path d="M15 34 L10 38 L13 84 Q38 78 60 91 Q82 79 109 82 L104 35 L101 34 M57 43 L60 86" />
+    <path d="M22 43 Q37 40 48 47 M23 51 Q35 48 48 55 M24 59 Q39 57 49 63 M25 67 L41 68 M68 47 Q79 41 92 42 M69 55 Q81 49 93 50 M70 63 Q80 59 94 58 M71 71 L85 67" />
+    <path class="construction" d="M11 89 Q55 97 112 86 M54 43 L58 89 M18 37 Q35 32 52 42" />
+  </g>
+  <g class="signal">
+    <circle cx="77" cy="27" r="2" fill="currentColor" stroke="none" />
+    <path d="M76 17 Q88 16 89 28 M75 7 Q99 5 100 28" />
+  </g>
+</svg>
+<style>
+  .journal-sketch { flex: 0 0 auto; inline-size: 5.5rem; block-size: auto; }
+  .graphite { stroke: var(--ink-quiet); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+  .construction { opacity: 0.35; stroke-width: 0.75; }
+  .signal { color: var(--accent); stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; transform: rotate(-9deg); transform-origin: 77px 27px; }
+  @media (max-width: 24rem) { .journal-sketch { inline-size: 4rem; } }
+</style>

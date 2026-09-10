@@ -598,17 +598,142 @@ or it becomes a second job.
 
 ## 12. Design system
 
-Minimal, AI-leaning, simple but stylish.
+### Approved field journal direction (2026-09-09)
+
+The maintainer selected the light field journal concept. This decision supersedes
+the earlier visual prescription below: warm off-white paper, large sans headings,
+one red editorial accent, fine rules and contextual notes in a wide margin.
+Tags are neutral outlined labels. The header carries the configured author name;
+the homepage opening uses optional `author.headline` and the existing bio.
+
+The opening is compact enough to reach actual writing quickly. The newest post
+leads; an active or experimental project from the existing register accompanies
+it. These are labelled as the latest post and a project in the workshop, never
+inferred claims about what the author is doing now. The archive retains dates,
+summaries, topic links and exact Markdown sizes. A resident section appears only
+when a published resident post exists. No invented quotations or telemetry.
+
+Article marginalia carry actual verification/update dates and a direct Markdown
+link for a reader handing the article to an agent. This visible handoff is an
+intentional exception to the previous rule against machine links in the UI.
+At narrow widths the margin moves below the article; reading and copy controls
+remain usable without horizontal page scrolling. Illustrations are optional
+content that must explain a real experiment, not a mandatory decoration slot.
+
+Personal names and real projects remain in the separate content repository;
+the engine demonstration continues to use explicitly synthetic content.
+
+### Illustrated composition
+
+The workshop spread now uses a compact introduction with a direct jump to the
+journal, an explicitly selected experiment with its linked current stage and an
+authored observation, three latest entries,
+and one dated before/after revision. `/archive/` keeps the complete journal
+accessible. This supersedes automatic pitfall marginalia: changes of mind are
+authored in the original article, not inferred from troubleshooting data.
+See [the content contract](../workshop-content.md) for optional fields, validation,
+fallbacks and the publication workflow.
+
+Visible editorial dates use Russian month names (`08 сентября`), with full dates
+on homepage entries and detail pages. UTC
+keeps the displayed day aligned with ISO `datetime` and unchanged machine data.
+The homepage archive is compact: date and kind share a left margin, followed by
+title and authored summary. On phones the metadata sits together above the title. Tags and
+byte sizes remain available in topic listings and articles. The SVG center label has
+a paper-coloured outline so connecting strokes do not cross its lettering.
+
+The illustrated revision restores the approved concept's composition: an active
+or experimental project leads the homepage, with a bounded pencil illustration
+alongside it. The complete stage timeline lives on the projects page; the home
+overview shows only the current stage, avoiding a duplicate status badge. The
+illustration caption is a readable link to its original. A small inline drawing
+of an open journal with RSS waves accompanies the subscription link. It is
+decorative and hidden from assistive technology; the adjacent text names the
+feed at `/rss/index.xml`, which also works in local preview without nginx's
+`/rss/` alias. These two scales of illustration leave recent writing visually prominent.
+Projects may supply `question` and `sketch: {center, labels, caption}`; labels are
+exactly four short strings. The caption describes the diagram accessibly and
+travels into both the homepage and project Markdown projections. Missing project
+data falls back to the latest post; missing sketch data does not invent a figure.
+The archive has a separate margin containing a sourced pitfall and its solution,
+linked back to the article. On phones the illustration remains visible and the
+margin follows the list. Example projects remain explicitly synthetic.
+
+The September 10 refinement keeps the opening biography intact in a wider,
+more compact introduction, with the journal jump directly below it. Structural
+labels are quiet sentence case; only the small journal masthead remains uppercase.
+Red marks identify the authored observation, drawing annotations and the revised
+position. The before/after insert has a graphite SVG separator and one red
+underline, without a redundant revision stamp or arrow. Space separates the
+remaining sections; pencil borders do not wrap every block. The existing
+experiment illustration and small RSS drawing provide the two illustration
+scales without additional decorative images. On phones the drawing follows the
+experiment summary, before its detailed observation.
+
+### Previous direction (historical rationale)
+
+**One loud object, and a quiet page under it.**
+
+The front page opens on the site's name with the corpus split into coloured
+counts beneath it. That row is the identity and the filter at once, every number
+in it is an article count, and its shape tells a reader what the site is about
+before they read a word. Everything below it is set quietly so that object keeps
+working.
+
+*Earlier drafts of this section described a cream editorial page, and then a
+terminal frame. Both were replaced after they were built and looked at. The
+cream page spent its colour on a highlight behind headings and pastel pills that
+labelled nothing; the terminal page spent its structure on a status line, file
+paths, reading times and a row of machine addresses — seven pieces of furniture
+around two articles, each defensible on its own and collectively louder than the
+writing. What survived from both is below.*
 
 **The visual language:**
 
-- cream background, monochrome, a great deal of whitespace
-- monospace for utility text, a text face for prose
-- pastel "pills" as section labels
-- headings with a coloured background highlight
-- utility-style field labels instead of decorative subheadings
-- footer as a status line
-- no stock illustrations, no gradients, no shadowed cards
+- near-white ground with a hair of violet, ink, hairline rules; no gradients, no
+  shadows, no illustration slots
+- one sans for everything a person reads; monospace only for what a machine
+  produced — dates, sizes, paths, code
+- colour means exactly one thing: a tag. Six pastels, and a tag keeps its colour
+  on every page it appears, so the colour becomes a second name for it
+- the archive is three zones — when, what, how much — with the metadata gathered
+  at the right edge and the writing alone in the middle
+- one real measurement per row, and only one
+- headings carry themselves with size, weight and space
+- a search hit inverts rather than tints, because every tint already means "tag"
+
+**The one number, and why it is that one.** Each row shows the exact byte length
+of the markdown twin the build emits for that article — the same string, from the
+same function, not an estimate of it. It is the one figure this site can put
+beside an article and mean completely: it is what somebody else's agent will
+actually fetch (§6). Kilobytes of markdown rather than tokens, because a token
+count needs a tokenizer and would still be a guess about whose.
+
+**Code is set on the page, not on a slab from somewhere else.** Astro's default
+is Shiki with `github-dark`, which drops a dark block into a near-white page in
+colours nothing else here can reach. Ours is the tag palette darkened until it
+is text: the same six hues carry code that carry topics, so a block belongs to
+the article around it. The scopes are deliberately few — a theme with forty rules
+distinguishes things a reader of a homelab article never needed distinguished.
+Long lines wrap with a hanging indent rather than scrolling or widening the
+block. A wrapped shell line would read as two commands — the indent is what
+prevents that, and it is why wrapping is acceptable here at all. Scrolling hides
+the end of the very thing a reader came for, and a block wider than the column
+costs the page its left edge, which on a text-first site is the worse trade.
+Every code block sits in the reading column, like everything else. The colours live in `src/styles/code-theme.ts`, the only place in the
+engine that names a colour outside `tokens.css`, and they are there because Shiki
+emits them inline and cannot read a custom property.
+
+**Nothing rendered that is not real.** Every value in the chrome is a frontmatter
+field, a piece of site data, or a build-time computation. The design borrows the
+form of instrumentation, and that form is worth nothing if the figures are
+invented — a value that cannot be computed is omitted, never filled with
+something plausible.
+
+**The machine surface stays off the page.** An agent never renders this HTML: it
+arrives with `Accept: text/markdown`, reads `<link rel="alternate">` in the head,
+or follows the `Link:` header nginx adds (§6). A visible row of links to twins
+reaches none of them and costs every human reader a line.
 
 **Borrow the typography, not someone else's vocabulary.** Tokens like
 `system_prompt`, `context_window` or `<|endoftext|>` belong to the sites that

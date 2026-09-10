@@ -2,10 +2,34 @@
 # project, not a link list). The state is the point — a list of links says
 # nothing a profile page would not, and goes stale invisibly.
 - slug: example-engine
-  name: Пример движка
-  summary: Синтетическая запись, чтобы страница проектов собиралась.
+  name: Может ли агент стать кем-то?
+  summary: Сохранить факты мало. В этом демонстрационном эксперименте проверяем, может ли агент учиться на собственном опыте.
+  question: Что остаётся от личности между разговорами?
+  featured: true
+  observation: После сброса диалога агент помнит факты, но повторяет уже отвергнутое предложение. Проверяем, чего не хватает памяти.
+  stages:
+    - title: Замысел
+      state: done
+      post: agent-memory-experiment
+    - title: Прототип
+      state: done
+      post: agent-memory-experiment
+    - title: Проверка
+      state: current
+      post: memory-reset-check
+    - title: Дальше?
+      state: next
+  sketch:
+    artwork: memory-study
+    annotations:
+      - факты сохранились
+      - это ещё проверяем
+      - здесь теряется контекст
+    center: личность
+    labels: [память, опыт, инициатива, характер]
+    caption: 'Карандашная метафора эксперимента: стопка карточек памяти и механический росток личности соединены оборванным проводом. Разрыв обведён красным.'
   state: active
-  since: 2026-09-01
+  since: 2026-09-08
   repo: https://github.com/example/example
 - slug: example-archived
   name: Пример архивного

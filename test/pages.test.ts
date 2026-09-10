@@ -12,6 +12,28 @@ import { build } from './helpers.ts';
 const OUT = 'dist-test-pages';
 const read = (path: string) => readFileSync(join(OUT, path), 'utf8');
 
+describe('the workshop and changes of mind', () => {
+  it('publishes the same dated correction in HTML and both machine twins', () => {
+    for (const path of ['index.html', 'posts/published-example/index.html', 'posts/published-example.md', 'posts/published-example.json']) {
+      expect(read(path)).toContain('Нужно дождаться готовности туннеля.');
+      expect(read(path)).toContain('2026-02-03');
+    }
+    expect(read('posts/published-example/index.html')).toContain('Тело опубликованной записи');
+  });
+  it('keeps a complete archive with a Markdown twin and no drafts', () => {
+    expect(read('index.html')).toContain('href="/archive/"');
+    for (const path of ['archive/index.html', 'archive/index.md']) {
+      expect(read(path)).toContain('published-example');
+      expect(read(path)).not.toContain('draft-example');
+    }
+  });
+  it('links the project trail to a real post', () => {
+    expect(read('projects/index.html')).toContain('История эксперимента');
+    expect(read('projects/index.html')).toContain('/posts/published-example/');
+    expect(read('projects/index.md')).toContain('Прототип (done): /posts/published-example/');
+  });
+});
+
 beforeAll(() => build({}, OUT), 180_000);
 
 describe('R3: a way to make contact, from any page', () => {

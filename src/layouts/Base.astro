@@ -1,12 +1,26 @@
 ---
-import { getCollection } from 'astro:content';
-
 import { getAuthor } from '../site.ts';
 import '../styles/base.css';
 
 /**
- * The page shell — design §5 (addresses and hreflang) and §12 (the status-line
- * footer).
+ * The page shell — design §5 (addresses and hreflang) and §12.
+ *
+ * A name, four links, and then the writing. That is the shape every blog worth
+ * copying converges on: danluu.com ships 22KB of HTML and no stylesheet at all
+ * and opens straight into its list; eli.thegreenplace.net gives three links;
+ * jvns.ca a name and a sentence. None of them has a status bar, a file path
+ * under a title, a reading time or a row of machine addresses.
+ *
+ * An earlier shell here had all of those. Each was defensible on its own — every
+ * value was real, nothing was invented — and together they were seven pieces of
+ * furniture around two articles, competing with the only thing anyone came for.
+ * Honest is not the same as necessary.
+ *
+ * The machine surface is gone from the page on purpose, and §6 is the reason: an
+ * agent never renders this HTML. It arrives with `Accept: text/markdown`, or it
+ * reads `<link rel="alternate">` in the head, or it follows the `Link:` header
+ * nginx adds. A row of `.md /index.json /llms.txt` links reached none of them
+ * and cost every human reader a line.
  */
 interface Props {
   title: string;
@@ -17,21 +31,37 @@ interface Props {
   noindex?: boolean;
   /** A narrower feed than /rss/ — a tag page advertises its own (R6). */
   feed?: string;
+  /**
+   * Listings span the frame the chrome spans; prose never does.
+   *
+   * A status line that crosses the screen above a column half its width reads as
+   * a bar bolted onto a narrow blog — the right end of it floats away from
+   * anything it could belong to. A listing at the same width closes that gap:
+   * the dates line up under the state on the status line, and the two are
+   * visibly one surface. Articles stay at --measure, because a 62rem line of
+   * Russian prose is unreadable and that is the whole point of the column.
+   */
+  wide?: boolean;
 }
 
-const { title, description, lang = 'ru', noindex = false, feed } = Astro.props;
+const { title, description, lang = 'ru', noindex = false, feed, wide = false } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 /*
  * Design §6: `<link rel="alternate">` for clients that read the head rather than
  * negotiating. Directory addresses only — those are the ones that have a twin.
  */
-const markdown = Astro.url.pathname.endsWith('/') ? `${Astro.url.pathname}index.md` : null;
-/* Counted through the collection, so the shell never learns where content comes from. */
-const posts = (await getCollection('posts')).filter((p) => p.data.status === 'published').length;
-/* R3: a way to make contact, visible from any page — the status line is every page. */
+const path = Astro.url.pathname;
+const markdown = path.endsWith('/') ? `${path}index.md` : null;
+/* R3: a way to make contact, visible from any page — the footer is every page. */
 const author = await getAuthor();
-const built = new Date().toISOString().slice(0, 10);
+
+const sections = [
+  { href: '/archive/', label: 'журнал', match: (p: string) => p.startsWith('/archive/') || p.startsWith('/posts/') || p.startsWith('/tag/') },
+  { href: '/projects/', label: 'проекты', match: (p: string) => p.startsWith('/projects/') },
+  { href: '/about/', label: 'о себе', match: (p: string) => p.startsWith('/about/') },
+  { href: '/search/', label: 'поиск', match: (p: string) => p.startsWith('/search/') },
+];
 ---
 
 <html lang={lang}>
@@ -56,39 +86,64 @@ const built = new Date().toISOString().slice(0, 10);
   <body>
     <a class="skip utility" href="#main">к содержанию</a>
 
-    <header class="column">
-      <nav class="nav utility" aria-label="основная навигация">
-        <a href="/">записи</a>
-        <a href="/about/">о себе</a>
-        <a href="/projects/">проекты</a>
-        <a href="/search/">поиск</a>
+    <header class="frame site-header">
+      <a class="wordmark" href="/">{author?.name ?? 'Полевой журнал'}</a>
+      {/* The content repository supplies the identity; navigation stays shared. */}
+      <nav class="masthead" aria-label="разделы">
+        {
+          sections.map((section) => {
+            const here = section.match(path);
+            return (
+              <a href={section.href} class:list={[{ here }]} aria-current={here ? 'page' : undefined}>
+                {section.label}
+              </a>
+            );
+          })
+        }
       </nav>
     </header>
 
-    <main id="main" class="column">
+    <main id="main" class={wide ? 'frame' : 'column'}>
       <slot />
     </main>
 
-    {/* Design §12: the footer is a status line, not a sitemap. */}
-    <footer class="column">
-      <p class="status utility">
-        <span>ru</span>
-        <span aria-hidden="true">·</span>
-        <span>{posts} записи</span>
-        <span aria-hidden="true">·</span>
-        <span>сборка {built}</span>
-        <span aria-hidden="true">·</span>
+    {/* R3 and R6, and nothing else. The machine finds its own way in (§6). */}
+    <footer class="frame">
+      <p class="colophon">
+        {author && <a href={author.contact.href}>{author.contact.label}</a>}
         <a href="/rss/">rss</a>
-        {
-          author && (
-            <>
-              <span aria-hidden="true">·</span>
-              <a href={author.contact.href}>{author.contact.label}</a>
-            </>
-          )
-        }
       </p>
     </footer>
+
+    <script>
+      /*
+       * `/` reaches search from anywhere — the habit every reader of this site
+       * already has. It is deliberately unadvertised: the page says nothing
+       * about it, so it costs no space, and a reader who does not know it loses
+       * nothing that the search link in the header does not already give.
+       */
+      const typing = (el: Element | null) =>
+        el instanceof HTMLElement &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+        if (typing(document.activeElement)) return;
+
+        const box = document.querySelector<HTMLInputElement>('#q');
+        event.preventDefault();
+
+        /* Pagefind may have failed to load, leaving the form hidden. Then the
+           box is not somewhere to send anyone — the page is. */
+        if (box && box.getClientRects().length > 0) {
+          box.focus();
+          box.select();
+          return;
+        }
+        window.location.href = '/search/';
+      });
+
+    </script>
   </body>
 </html>
 
@@ -104,27 +159,77 @@ const built = new Date().toISOString().slice(0, 10);
     padding: var(--space-2);
   }
 
-  header,
-  footer {
-    padding-block: var(--space-3);
-  }
-
   main {
     padding-block-end: var(--space-5);
   }
 
-  .nav {
+  /*
+   * Name on the left, sections on the right, one line, no rule under it. A rule
+   * would draw a box around the page; the space below is enough of a boundary.
+   */
+  .masthead,
+  .colophon {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    align-items: baseline;
+    gap: var(--space-2) var(--space-3);
+    margin: 0;
+    padding-block: var(--space-3);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    color: var(--ink-quiet);
   }
 
-  .status {
+  .masthead {
+    justify-content: flex-end;
+    font-family: var(--face-prose);
+    font-size: 0.9375rem;
+    color: var(--ink);
+  }
+
+  .site-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding-block: var(--space-2);
+  }
+
+  .wordmark {
+    font-size: var(--step-1);
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    text-decoration: none;
+  }
+
+  @media (max-width: 40rem) {
+    .site-header { align-items: flex-start; flex-direction: column; gap: 0; }
+    .masthead { justify-content: flex-start; padding-block: var(--space-2); gap: 1.25rem; }
+    .wordmark { padding-block-start: var(--space-2); }
+  }
+
+  .colophon {
+    gap: var(--space-3);
+    margin-block-start: var(--space-3);
     padding-block-start: var(--space-2);
     border-block-start: 1px solid var(--rule);
+  }
+
+  .masthead a,
+  .colophon a {
+    text-decoration: none;
+  }
+
+  .masthead a:hover,
+  .masthead a:focus-visible,
+  .colophon a:hover,
+  .colophon a:focus-visible {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .masthead a.here {
+    color: var(--ink);
   }
 </style>

@@ -43,6 +43,20 @@ export async function getPage(slug: string): Promise<Post | undefined> {
   return pages.find((page) => page.id === slug);
 }
 
+/**
+ * Reading time in minutes, from the body.
+ *
+ * Computed rather than stored: a number in the frontmatter goes stale the first
+ * time a paragraph is edited, and nothing on a listing may be a number nobody
+ * checks. 180 words a minute is the low end for technical Russian prose, which
+ * is the right end to be on — an underestimate reads as honest, an overestimate
+ * reads as padding.
+ */
+export function readMinutes(post: Post): number {
+  const words = post.body?.trim().split(/\s+/).filter(Boolean).length ?? 0;
+  return Math.max(1, Math.round(words / 180));
+}
+
 /** The tags actually in use, with their counts, most-used first then alphabetical. */
 export async function listTags(): Promise<{ tag: string; count: number }[]> {
   const counts = new Map<string, number>();

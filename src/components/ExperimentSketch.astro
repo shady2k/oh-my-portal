@@ -1,0 +1,86 @@
+---
+import type { Project } from '../schema/site.ts';
+import { Image } from 'astro:assets';
+import memoryStudy from '../assets/illustrations/memory-study.png';
+interface Props { sketch: NonNullable<Project['sketch']>; compact?: boolean; }
+const { sketch, compact = false } = Astro.props;
+const nodes = [
+  { x: 105, y: 99, r: 23, tx: 34, ty: 42, rotation: -8 },
+  { x: 309, y: 66, r: 24, tx: 307, ty: 25, rotation: 7 },
+  { x: 348, y: 202, r: 18, tx: 279, ty: 268, rotation: -6 },
+  { x: 103, y: 235, r: 17, tx: 24, ty: 294, rotation: -9 },
+];
+---
+
+<figure class:list={['experiment-sketch', { illustrated: !!sketch.artwork, compact }]}>
+  {sketch.artwork ? <>
+    <div class="art-plane">
+    <a class="art-link" href={memoryStudy.src} aria-label="Рассмотреть карандашный рисунок крупнее">
+      <Image src={memoryStudy} alt={sketch.caption} widths={[480, 800, 1200]} sizes={compact ? '(max-width: 704px) 85vw, 400px' : '(max-width: 704px) 90vw, 520px'} width={1200} format="webp" quality={85} loading="eager" />
+    </a>
+    {sketch.annotations && <>
+      <svg class="annotation-arrows" viewBox="0 0 500 500" fill="none" aria-hidden="true">
+        <path d="M88 57 C75 73 79 92 94 107 M93 106 l-2 -13 M93 106 l-11 -4" />
+        <path d="M329 40 Q375 26 391 51 M390 50 l-1 -10 M390 50 l-10 -3" />
+        <path d="M192 463 Q212 430 244 387 M241 391 l-10 5 M242 390 l-1 12" />
+      </svg>
+      <div class="annotations">
+        <span class="annotation memory">{sketch.annotations[0]}</span>
+        <span class="annotation growing">{sketch.annotations[1]}</span>
+        <span class="annotation gap">{sketch.annotations[2]}</span>
+      </div>
+    </>}
+    </div>
+    <figcaption class="art-hint"><a href={memoryStudy.src}>Рассмотреть набросок ↗</a></figcaption>
+  </> : <>
+  <svg viewBox="0 0 440 330" role="img" aria-label={sketch.caption}>
+    <defs>
+      <pattern id="pencil-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(32)">
+        <path d="M 0 0 V 7" class="hatch" />
+      </pattern>
+    </defs>
+    <g class="pencil" fill="none">
+      <path d="M106 99 Q163 138 216 169 Q264 125 309 66 M216 169 Q288 173 348 202 M103 235 Q168 212 216 169" />
+      <path d="M107 100 Q82 161 104 235 M311 68 Q361 116 348 202 M105 100 Q207 14 309 66 M104 237 Q260 295 348 202" stroke-dasharray="5 8" class="faint" />
+      <path d="M216 169 Q204 107 224 71 M216 169 Q207 234 239 278" />
+      <circle cx="224" cy="71" r="8" /><circle cx="239" cy="278" r="9" />
+      <path d="M73 51 Q72 75 90 85 l-2 -9 m2 9 l-10 -1 M342 35 q-7 7 -15 12 l9 0 M365 242 q-2 -18 -10 -25 l-1 9 M55 265 l29 -20 -10 1" />
+      {nodes.map((n) => <circle cx={n.x} cy={n.y} r={n.r} class="node" />)}
+      <path d="M170 166 C165 111 251 117 260 162 C271 216 183 232 170 166 Z" class="core" />
+      <path d="M172 169 C167 118 253 113 263 165 C270 218 183 230 172 169" class="faint" />
+    </g>
+    <g class="labels">
+      {nodes.map((n, i) => <text x={n.tx} y={n.ty} transform={`rotate(${n.rotation} ${n.tx} ${n.ty})`}>{sketch.labels[i]}</text>)}
+      <text x="216" y="174" text-anchor="middle" class="center-label">{sketch.center}</text>
+    </g>
+    <circle cx="180" cy="290" r="3" class="dot" />
+    <path d="M378 110 l5 -7 m-9 1 l12 4" class="pencil faint" />
+  </svg>
+  <figcaption class="sr-only">{sketch.caption}</figcaption>
+  </>}
+</figure>
+
+<style>
+  .experiment-sketch { margin: 0; inline-size: 100%; }
+  .illustrated { padding-block-end: 1.5rem; }
+  .compact.illustrated { padding-block-end: 0; }
+  .compact .annotation { font-size: clamp(1.0625rem, 1.65vw, 1.3rem); }
+  .art-plane { position: relative; }
+  .art-link { display: block; background: var(--paper); }
+  .art-link :global(img) { display: block; inline-size: 100%; block-size: auto; mix-blend-mode: multiply; }
+  .annotation-arrows { position: absolute; inset: 0; inline-size: 100%; pointer-events: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round; }
+  .annotation { position: absolute; font-family: 'Journal Hand', cursive; font-size: clamp(1.15rem, 2vw, 1.6rem); font-weight: 500; color: var(--accent); line-height: 1; max-inline-size: 46%; pointer-events: none; }
+  .memory { inset-block-start: 3%; inset-inline-start: 2%; transform: rotate(-8deg); }
+  .growing { inset-block-start: 1%; inset-inline-start: 50%; transform: rotate(5deg); }
+  .gap { inset-block-start: 91%; inset-inline-start: 20%; max-inline-size: 75%; transform: rotate(-4deg); }
+  .art-hint { display: block; text-align: center; font-size: 0.8125rem; color: var(--ink-quiet); margin-block-start: 0.5rem; }
+  svg { display: block; inline-size: 100%; block-size: auto; overflow: visible; }
+  .pencil { stroke: var(--ink); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+  .faint { opacity: 0.38; stroke-width: 0.8; }
+  .node, .core { fill: var(--paper); }
+  .core { fill: url(#pencil-hatch); }
+  .hatch { stroke: var(--ink); stroke-width: 0.5; opacity: 0.23; }
+  .labels { fill: var(--ink-quiet); font-family: 'Segoe Print', 'Bradley Hand', cursive; font-size: 17px; font-style: italic; }
+  .center-label { font-size: 14px; fill: var(--ink); paint-order: stroke fill; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+  .dot { fill: var(--accent); }
+</style>

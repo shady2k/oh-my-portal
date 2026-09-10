@@ -17,7 +17,7 @@ import Base from '../../layouts/Base.astro';
 ---
 
 <Base title="Поиск" description="Поиск по записям: точные имена инструментов и версии." noindex>
-  <h1 class="highlight"><span>Поиск</span></h1>
+  <h1>Поиск</h1>
 
   <form id="search" role="search" hidden>
     <label class="field-label" for="q">запрос</label>
@@ -53,6 +53,7 @@ import Base from '../../layouts/Base.astro';
 </Base>
 
 <script>
+  import { displayDate } from '../../dates.ts';
   const form = document.querySelector('#search') as HTMLFormElement;
   const input = document.querySelector('#q') as HTMLInputElement;
   const status = document.querySelector('#status') as HTMLElement;
@@ -115,7 +116,7 @@ import Base from '../../layouts/Base.astro';
         line.className = 'utility';
         const time = document.createElement('time');
         time.dateTime = item.meta.date;
-        time.textContent = item.meta.date;
+        time.textContent = displayDate(new Date(item.meta.date));
         line.append(time);
         li.append(line);
       }
@@ -197,9 +198,4 @@ import Base from '../../layouts/Base.astro';
     margin-block: 0 var(--space-1);
   }
 
-  /* Pagefind wraps matched terms in <mark>; make it the heading highlight. */
-  .list :global(mark) {
-    background: var(--highlight);
-    color: inherit;
-  }
 </style>

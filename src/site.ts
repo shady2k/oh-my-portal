@@ -1,6 +1,7 @@
 import { getCollection, getEntry } from 'astro:content';
 
 import type { Author, Project } from './schema/site.ts';
+import { listPosts } from './posts.ts';
 
 /**
  * The site's own data — design §4.
@@ -22,6 +23,17 @@ export async function getAuthor(): Promise<Author | undefined> {
  */
 export async function listProjects(): Promise<Project[]> {
   const entries = await getCollection('projects');
+  const visiblePosts = new Set((await listPosts()).map((post) => post.id));
+  for (const { data } of entries) {
+    for (const stage of data.stages ?? []) {
+      if (stage.post && !visiblePosts.has(stage.post)) {
+        throw new Error(`Project ${data.slug}: stage references unavailable post ${stage.post}`);
+      }
+    }
+  }
+  if (entries.filter(({ data }) => data.featured).length > 1) {
+    throw new Error('Only one project can be featured on the homepage');
+  }
   const rank: Record<Project['state'], number> = {
     active: 0,
     maintained: 1,

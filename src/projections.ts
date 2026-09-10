@@ -1,6 +1,7 @@
 import { stringify as toYaml } from 'yaml';
 
 import type { Post } from './posts.ts';
+import type { Project } from './schema/site.ts';
 
 /**
  * The projections — design §6.
@@ -37,6 +38,7 @@ export function articleMarkdown(post: Post, site: URL): string {
     canonical: absolute(site, postPath(post)),
     date: iso(data.date),
     ...(data.updated ? { updated: iso(data.updated) } : {}),
+    ...(data.revisions ? { revisions: data.revisions.map((r) => ({ ...r, date: iso(r.date) })) } : {}),
     kind: data.kind,
     author: data.author,
     lang: data.lang,
@@ -64,6 +66,7 @@ export function articleJson(post: Post, site: URL) {
     markdown: absolute(site, `/posts/${post.id}.md`),
     date: iso(data.date),
     ...(data.updated ? { updated: iso(data.updated) } : {}),
+    ...(data.revisions ? { revisions: data.revisions.map((r) => ({ ...r, date: iso(r.date) })) } : {}),
     kind: data.kind,
     author: data.author,
     lang: data.lang,
@@ -106,6 +109,9 @@ export function catalogueMarkdown(posts: Post[], site: URL): string {
     lines.push(`## [${post.data.title}](${absolute(site, postPath(post))})`, '');
     lines.push(`${post.data.summary}`, '');
     lines.push(`- дата: ${iso(post.data.date)}`);
+    for (const revision of post.data.revisions ?? []) {
+      lines.push(`- передумал (${iso(revision.date)}): ${revision.before} → ${revision.after}. ${revision.reason}`);
+    }
     if (post.data.tags.length) lines.push(`- темы: ${post.data.tags.join(', ')}`);
     lines.push(`- markdown: ${absolute(site, `/posts/${post.id}.md`)}`, '');
   }
@@ -134,6 +140,7 @@ export function llmsTxt(posts: Post[], site: URL, tags: string[] = []): string {
   lines.push(`- [Каталог JSON](${absolute(site, '/index.json')}): все записи с метаданными`);
   lines.push(`- [Полный текст](${absolute(site, '/llms-full.txt')}): все записи целиком`);
   lines.push(`- [RSS](${absolute(site, '/rss/')}): подписка на все записи`);
+  lines.push(`- [Архив](${absolute(site, '/archive/index.md')}): полный журнал`);
   for (const tag of tags) {
     lines.push(`- [RSS: ${tag}](${absolute(site, `/feeds/${tag}.xml`)}): подписка только на эту тему`);
   }
@@ -178,7 +185,7 @@ export function aboutMarkdown(
  * rather than inferring liveness from a commit date.
  */
 export function projectsMarkdown(
-  projects: { name: string; slug: string; summary: string; state: string; since?: Date; repo?: string; site?: string }[],
+  projects: { name: string; slug: string; summary: string; state: string; since?: Date; repo?: string; site?: string; question?: string; sketch?: { caption: string; annotations?: string[] }; stages?: Project['stages']; observation?: string }[],
   label: Record<string, string>,
   body?: string,
 ): string {
@@ -187,6 +194,13 @@ export function projectsMarkdown(
   for (const project of projects) {
     lines.push(`## ${project.name}`, '');
     lines.push(project.summary, '');
+    if (project.question) lines.push(`Открытый вопрос: ${project.question}`, '');
+    if (project.sketch) lines.push(project.sketch.caption, '');
+    if (project.sketch?.annotations) lines.push(`Пометки к рисунку: ${project.sketch.annotations.join('; ')}.`, '');
+    if (project.observation) lines.push(`Наблюдение: ${project.observation}`, '');
+    for (const stage of project.stages ?? []) {
+      lines.push(`- ${stage.title} (${stage.state})${stage.post ? `: /posts/${stage.post}/` : ''}`);
+    }
     lines.push(`- состояние: ${label[project.state] ?? project.state} (\`${project.state}\`)`);
     if (project.since) lines.push(`- с: ${iso(project.since)}`);
     if (project.repo) lines.push(`- исходники: ${project.repo}`);

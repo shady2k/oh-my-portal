@@ -2,6 +2,12 @@
   name: Живой проект
   summary: Проверяет активное состояние.
   state: active
+  stages:
+    - title: Прототип
+      state: done
+      post: published-example
+    - title: Проверка
+      state: next
   since: 2026-02-01
   repo: https://github.com/example/live
 - slug: dead-thing

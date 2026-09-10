@@ -1,5 +1,24 @@
 @import './tokens.css';
 
+/* Only marginal annotations use handwriting; served from the same origin. */
+@font-face {
+  font-family: 'Journal Hand';
+  src: url('../assets/fonts/caveat-cyrillic-500.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Journal Hand';
+  src: url('../assets/fonts/caveat-latin-500.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /*
  * Base styles — design §12. Element selectors rather than utility classes:
  * an article is markdown that nobody annotates, so the plain tags have to
@@ -23,7 +42,8 @@ body {
   color: var(--ink);
   font-family: var(--face-prose);
   font-size: var(--step-0);
-  line-height: 1.65;
+  /* A sans wants a little less leading than a serif did at this measure. */
+  line-height: 1.6;
   text-wrap: pretty;
   -webkit-text-size-adjust: 100%;
 }
@@ -35,12 +55,24 @@ body {
   margin-inline: auto;
 }
 
+/*
+ * The frame the chrome spans — the two status lines and the listing. Same
+ * gutter as .column, so a status line and a paragraph share a left edge on a
+ * narrow screen and only diverge once there is room to diverge.
+ */
+.frame {
+  inline-size: min(100% - 2 * var(--space-3), var(--frame));
+  margin-inline: auto;
+}
+
 /* --- utility text: everything that is not prose --- */
 
 .utility {
   font-family: var(--face-utility);
   font-size: var(--step--1);
   letter-spacing: 0.01em;
+  /* Dates and counts stack in columns in the listing; they have to line up. */
+  font-variant-numeric: tabular-nums;
   color: var(--ink-quiet);
 }
 
@@ -51,21 +83,37 @@ body {
 .field-label {
   font-family: var(--face-utility);
   font-size: var(--step--1);
-  text-transform: lowercase;
-  letter-spacing: 0.06em;
+  font-weight: 400;
   color: var(--ink-quiet);
 }
 
-/* --- headings carry a coloured highlight, not a rule or a size jump alone --- */
+/*
+ * Headings: size, weight and space carry them, and a touch of negative tracking
+ * keeps a large sans from looking loose. Colour is spent on tags, not here.
+ */
 
 h1,
 h2,
 h3 {
   font-family: var(--face-prose);
-  font-weight: 600;
-  line-height: 1.2;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
   text-wrap: balance;
   margin-block: var(--space-4) var(--space-2);
+}
+
+/* Real text, moved offscreen — never `display: none`, which also takes it out
+   of the document outline. */
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 h1 {
@@ -79,15 +127,14 @@ h3 {
 }
 
 /*
- * The highlight sits behind the words, not behind the line box — a background
- * on the block would paint the empty half of a short heading too.
+ * A search hit, and the only inversion in the design. Pagefind wraps matched
+ * terms in <mark>, and the browser default is a yellow that belongs to a
+ * different page.
  */
-:is(h1, h2, h3).highlight > span,
-.highlight > :is(h1, h2, h3) > span {
-  background: linear-gradient(var(--highlight), var(--highlight));
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  padding-inline: 0.2em;
+mark {
+  background: var(--mark-ground);
+  color: var(--mark-ink);
+  padding-inline: 0.15em;
 }
 
 /* --- links: underlined, because colour alone is not a signal here --- */
@@ -106,7 +153,7 @@ a:focus-visible {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -131,13 +178,57 @@ code {
   padding: 0.1em 0.3em;
 }
 
-pre {
+/*
+ * A code block, including the one Shiki produces (`.astro-code`) — the wrapper's
+ * inline background is stripped in astro.config.mjs so this rule is the only
+ * thing that decides the ground.
+ */
+pre,
+pre.astro-code {
   font-family: var(--face-utility);
   font-size: var(--step--1);
+  line-height: 1.55;
   background: var(--paper-sunk);
+  color: var(--ink);
   padding: var(--space-3);
-  /* Long commands scroll rather than widening the page. */
+  /*
+   * Long commands wrap rather than scrolling out of sight. Scrolling hides the
+   * end of the very thing a reader came for, and widening the block instead
+   * costs the page its left edge.
+   */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* A single unbreakable run longer than the column still has somewhere to go. */
   overflow-x: auto;
+}
+
+/*
+ * The hanging indent is what makes wrapping acceptable in a shell block: without
+ * it a continuation starts at the left margin and reads as a second command.
+ * Shiki emits one `.line` per source line, so the indent is per command rather
+ * than per visual row.
+ *
+ * The white-space split is the load-bearing part. Shiki leaves a newline text
+ * node between the line spans; with `pre-wrap` on the block those newlines are
+ * preserved *in addition* to each line being a block, and every code block comes
+ * out double-spaced. Collapsing whitespace on the wrapper drops them, and each
+ * line keeps `pre-wrap` so its own leading indentation survives — which is the
+ * whole content of a YAML block.
+ */
+pre.astro-code {
+  white-space: normal;
+}
+
+pre.astro-code .line {
+  display: block;
+  white-space: pre-wrap;
+  padding-inline-start: 2ch;
+  text-indent: -2ch;
+}
+
+/* A blank source line is an empty block, and an empty block has no height. */
+pre.astro-code .line:empty::before {
+  content: '\200b';
 }
 
 pre code {

@@ -2,6 +2,9 @@
 import { render } from 'astro:content';
 
 import Base from '../../layouts/Base.astro';
+import ExperimentSketch from '../../components/ExperimentSketch.astro';
+import ExperimentTrail from '../../components/ExperimentTrail.astro';
+import { displayDate } from '../../dates.ts';
 import { getPage } from '../../posts.ts';
 import { listProjects, STATE_LABEL } from '../../site.ts';
 
@@ -25,24 +28,28 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   description={page?.data.summary ?? 'Реестр проектов с состоянием каждого.'}
 >
   <article data-pagefind-body>
-    <h1 class="highlight"><span>{page?.data.title ?? 'Проекты'}</span></h1>
+    <h1>{page?.data.title ?? 'Проекты'}</h1>
 
     {Content && <div class="prose"><Content /></div>}
 
     <ul class="register">
       {
         projects.map((project) => (
-          <li>
+          <li id={project.slug}>
             <p class="head">
               <span class="name">{project.name}</span>
               <span class={`state state-${project.state}`}>{STATE_LABEL[project.state]}</span>
               {project.since && (
                 <time class="utility" datetime={iso(project.since)}>
-                  с {iso(project.since)}
+                  с {displayDate(project.since)}
                 </time>
               )}
             </p>
             <p class="summary">{project.summary}</p>
+            {project.stages && <ExperimentTrail stages={project.stages} />}
+            {project.observation && <p>{project.observation}</p>}
+            {project.sketch && <ExperimentSketch sketch={project.sketch} />}
+            {project.question && <p class="question">Открытый вопрос: {project.question}</p>}
             <p class="links utility" data-pagefind-ignore>
               {project.repo && <a href={project.repo}>исходники</a>}
               {project.site && <a href={project.site}>сайт</a>}
@@ -81,29 +88,28 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     font-weight: 600;
   }
 
-  /* A pill, like a section label — the state is the register's vocabulary. */
+  /*
+   * The state is the register's whole point (§12), and it is set in brackets
+   * rather than in a coloured chip: five pastel fills would have to encode an
+   * order — active is better than paused is better than archived — that colour
+   * cannot carry without a legend nobody reads. The word says it outright.
+   */
   .state {
     font-family: var(--face-utility);
     font-size: var(--step--1);
-    padding: 0.15em 0.6em;
-    border-radius: 999px;
-    background: var(--pill-default);
+    color: var(--ink);
   }
 
-  .state-active {
-    background: var(--pill-homelab);
+  .state::before {
+    content: '[';
   }
-  .state-maintained {
-    background: var(--pill-kubernetes);
+
+  .state::after {
+    content: ']';
   }
-  .state-experiment {
-    background: var(--pill-pkms);
-  }
-  .state-paused {
-    background: var(--pill-blogging);
-  }
+
+  /* The one state that is not news: a finished project recedes. */
   .state-archived {
-    background: var(--paper-sunk);
     color: var(--ink-quiet);
   }
 

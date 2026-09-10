@@ -1,0 +1,61 @@
+---
+/**
+ * An outlined topic label, shared by the archive and article margins.
+ *
+ * A count is shown where the chip is a filter and omitted where it is a label —
+ * the same object doing two jobs, told apart by whether it carries a number.
+ */
+interface Props {
+  tag: string;
+  href?: string;
+  count?: number;
+  /** The chip for the page you are on. */
+  active?: boolean;
+}
+
+const { tag, href, count, active = false } = Astro.props;
+const Element = href ? 'a' : 'span';
+---
+
+<Element
+  class:list={['chip', { active }]}
+  aria-current={active ? 'page' : undefined}
+  {...href ? { href } : {}}
+>
+  {tag}
+  {count !== undefined && <b class="count">{count}</b>}
+</Element>
+
+<style>
+  .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45em;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    line-height: 1.5;
+    /* Fine rules match the journal's editorial labels. */
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    padding: 0.2em 0.55em;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .count {
+    font-weight: 400;
+    color: var(--ink-quiet);
+  }
+
+  a.chip:hover,
+  a.chip:focus-visible {
+    /* Reinforce the outline for keyboard and pointer navigation. */
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .chip.active {
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+</style>

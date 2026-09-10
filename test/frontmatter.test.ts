@@ -66,6 +66,13 @@ describe('slugs', () => {
 });
 
 describe('optional fields', () => {
+  it('requires editorial revisions to fit the publication/update interval', () => {
+    const revision = { date: '2026-05-15', before: 'Before', after: 'After', reason: 'Evidence' };
+    expect(parse({ updated: '2026-05-15', revisions: [revision] }).success).toBe(true);
+    rejects({ revisions: [revision] });
+    rejects({ updated: '2026-05-14', revisions: [revision] });
+    rejects({ updated: '2026-05-15', revisions: [{ ...revision, date: '2026-05-13' }] });
+  });
   it('accepts aliases only as site-absolute paths with a trailing slash', () => {
     expect(parse({ aliases: ['/sbor-loghov-iz-podov-kubernetes/', '/'] }).success).toBe(true);
     rejects({ aliases: ['sbor-loghov/'] });

@@ -2,9 +2,10 @@
 # §2), so nothing here is anyone's real contact. The content repository supplies
 # the real file at the same path.
 name: Пример Автора
+headline: Собираю свою цифровую жизнь.
 bio: >-
-  Синтетический автор: существует, чтобы движок собирался без
-  контент-репозитория и чтобы была видна форма данных.
+  Проверяю память агентов, собираю домашнюю лабораторию
+  и записываю, что получилось. Демонстрационный журнал.
 contact:
   label: почта
   href: mailto:author@example.invalid

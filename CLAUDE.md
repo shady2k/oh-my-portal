@@ -121,10 +121,42 @@ This repository has no articles of its own (design §2), so the scripts point at
 `examples/`:
 
 ```bash
-npm run dev        # dev server, no Pagefind index — /search/ says so
+npm run dev        # dev server: shows drafts, no Pagefind index — /search/ says so
 npm run preview    # serves a real build: search works, twins work
 npm run verify     # astro check + vitest — run before handing off
+npm run screenshot # look at the running site instead of reasoning about it
 ```
+
+**`dev` shows drafts and nothing else does.** It sets `PREVIEW=1`, which is the
+one switch that makes `status: draft` visible (`src/posts.ts`). `build`,
+`build:examples` and `preview` never set it, so a draft cannot reach production
+by forgetting a flag — and `test/build.test.ts` asserts both halves.
+
+**`preview` serves `.md` without a charset, so Cyrillic twins look like mojibake
+there and only there.** A prerendered endpoint's `Content-Type` header is dropped
+at build time — the file is written, the header is not — so locally the charset
+comes from whatever Astro's static server sends, which is `text/markdown` bare.
+Production does not have this problem: `nginx/site.conf.example` sets
+`charset utf-8`, and `test/nginx.test.ts` keeps it there. To check the real
+behaviour, run nginx over `dist` rather than trusting `preview`.
+
+**`preview` serves `dist`, so it does not pick up a source change until you
+rebuild.** `npm run build:examples` first, or the page you are looking at is the
+one from before your edit — which is a slow way to conclude that nothing
+happened.
+
+**Do not run `verify` while `dev` is running.** Both drive `astro build` against
+`.astro/data-store.json` and the loser dies on a rename with
+`unknown-filesystem-error`. Nothing is wrong with the code; run it again with the
+dev server stopped.
+
+Design §12 is a visual specification, so a change to it is checked by looking:
+`npm run screenshot [outDir] [baseUrl]` writes desktop and mobile shots of the
+front page, an article and the register against a server you already started. On
+NixOS the browsers come from the nix store and its chromium build usually does
+not match the revision the npm package wants — the script resolves the binary out
+of `PLAYWRIGHT_BROWSERS_PATH` itself rather than making anyone run
+`npx playwright install`, which downloads a browser that will not start there.
 
 Both servers bind to **`127.0.0.1`**, not `localhost`. Node resolves `localhost`
 through the system resolver, and where that answers `::1` first the server binds

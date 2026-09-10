@@ -1,0 +1,12 @@
+# Pencil study
+
+`memory-study.png` is an AI-generated editorial illustration made with the
+built-in imagegen tool for this engine's synthetic memory experiment. It is a
+metaphor, not a diagram of a real system. The original stays here; Astro emits
+responsive WebP variants. Captions and annotations live in project data and HTML.
+Clicking the image opens the full original. Font: Caveat from the official
+Google Fonts repository, licensed under the adjacent font directory's OFL file.
+
+## Generation prompt
+
+Use case: illustration-story. Asset type: standalone editorial pencil illustration for a personal engineering field journal website. Create a beautiful actual graphite pencil drawing on clean white paper, square composition, high resolution. An intimate inventor's notebook study of an AI agent's memory, visibly drawn by hand: at left a small loosely stacked bundle of index cards in three-quarter perspective with a few graphite lines suggesting entries (absolutely no legible text); at right a delicate intricate partly assembled mechanical seedling with three leaves, fine wire roots and tiny cog components, representing a developing identity. Between the cards and seedling a looping graphite filament has a conspicuous break with two frayed ends at the lower center, representing context lost between conversations. One loose card has slipped into this gap. Fine tentative construction lines, repeated imperfect contours, tactile graphite grain, crosshatching, varying pencil pressure, softly erased earlier positions, small marginal exploratory sketches of a leaf and a memory card. The drawing is airy and sophisticated, neither photorealistic nor flat vector, like a skilled illustrator's unfinished observational study. Add only two restrained rusty red colored-pencil marks: a rough ellipse around the broken filament at center-bottom, and a small question mark beside the unfinished top leaf. Let the central objects fill 75 percent of canvas. Leave the top 12 percent and bottom 14 percent mostly blank for HTML annotations added later. All drawing fully inside canvas with generous clean margins. Pure white background with no border and no visible page edge. No letters, no words, no captions, no watermark, no UI, no diagram of circles and nodes, no computer, no robot face, no glossy 3D, no photographic pencil objects. Graphite texture and hand gesture must be strongly visible when this is shown at 500px wide.

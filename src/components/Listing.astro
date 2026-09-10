@@ -1,0 +1,190 @@
+---
+import { type Post } from '../posts.ts';
+import { articleMarkdown } from '../projections.ts';
+import Tag from './Tag.astro';
+import { displayDate } from '../dates.ts';
+
+/**
+ * The archive: date, title, and what the article weighs to a machine.
+ *
+ * The size is the exact byte length of the markdown twin this build emits at
+ * `/posts/<slug>.md` — the same string, produced by the same function, not an
+ * estimate of it. That is the one number this site can put next to an article
+ * and mean completely: it is what somebody else's agent will actually fetch
+ * (§6), and it is why the number is in kilobytes of markdown rather than in
+ * tokens, which would need a tokenizer and would still be a guess about whose.
+ *
+ * Full listings have three zones: when, what, and how much. Compact listings
+ * group date and kind in one margin beside the writing. The tags sit with the
+ * size rather than under the title, so the right edge of the row is entirely
+ * metadata and the middle is entirely the writing.
+ */
+interface Props {
+  posts: Post[];
+  compact?: boolean;
+  /** Keep the authored reading invitation in the homepage's simpler rows. */
+  showSummary?: boolean;
+}
+
+const { posts, compact = false, showSummary = !compact } = Astro.props;
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Kilobytes, one decimal. Below 1 KB the decimal is noise, so it goes. */
+const size = (post: Post) => {
+  const bytes = Buffer.byteLength(articleMarkdown(post, Astro.site!), 'utf8');
+  const kb = bytes / 1024;
+  return kb < 1 ? `${bytes} Б` : `${kb.toFixed(1)} КБ`;
+};
+---
+
+<ul class:list={['listing', { compact }]}>
+  {
+    posts.map((post) => (
+      <li>
+        <div class="date-group">
+        <time class="date" datetime={iso(post.data.date)} title={displayDate(post.data.date)}>
+          {displayDate(post.data.date, false)}{' '}
+          <span class="year">{post.data.date.getUTCFullYear()}</span>
+        </time>
+        {compact && <p class="compact-meta">
+          <span>{post.data.kind === 'note' ? 'заметка' : 'статья'}</span>
+          {post.data.author === 'being' && <span class="being">написано существом</span>}
+        </p>}
+        </div>
+
+        <div class="entry">
+          <h2 class="title">
+            <a href={`/posts/${post.id}/`}>{post.data.title}</a>
+          </h2>
+          {showSummary && <p class="summary">{post.data.summary}</p>}
+          {post.data.status === 'draft' && <p class="draft">черновик</p>}
+        </div>
+
+        {!compact && <p class="meta">
+          <span class="size">{size(post)}</span>
+          <span class="kind">{post.data.kind === 'note' ? 'заметка' : 'статья'}</span>
+          {post.data.author === 'being' && <span class="being">написано существом</span>}
+          {post.data.tags.map((tag) => (
+            <Tag tag={tag} href={`/tag/${tag}/`} />
+          ))}
+        </p>}
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .listing {
+    container-type: inline-size;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr) minmax(8rem, 13rem);
+    gap: var(--space-1) var(--space-3);
+    align-items: baseline;
+    padding-block: 1.75rem;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .date,
+  .size {
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-quiet);
+    white-space: nowrap;
+  }
+
+  .entry {
+    max-inline-size: var(--measure);
+  }
+  .year { display: block; font-size: 0.75rem; margin-block-start: 0.2rem; }
+  .compact li { grid-template-columns: 10rem minmax(0, 1fr); padding-block: 1.5rem; }
+  .compact li:last-child { border-block-end: 0; }
+  .compact-meta { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; margin: 0.25rem 0 0; font-family: var(--face-utility); font-size: 0.75rem; color: var(--ink-quiet); }
+  .compact .title { font-size: 1.25rem; }
+  .compact .summary { font-size: 0.9375rem; max-inline-size: 48rem; line-height: 1.5; }
+  .compact .year { display: inline; font-size: inherit; margin: 0; }
+
+  /*
+   * No underline: at this size and weight the title is plainly the thing to
+   * click, and a rule under two lines of it would be the heaviest mark on a page
+   * whose whole idea is that the colour is up at the top.
+   */
+  .title {
+    font-size: var(--step-1);
+    font-weight: 620;
+    letter-spacing: -0.011em;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .title a {
+    text-decoration: none;
+  }
+
+  .title a:hover,
+  .title a:focus-visible {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.12em;
+  }
+
+  .summary {
+    margin-block: var(--space-1) 0;
+    color: var(--ink-quiet);
+  }
+
+  .draft {
+    margin-block: var(--space-1) 0;
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--step--1);
+    font-family: var(--face-utility);
+  }
+  .kind { border: 1px solid var(--rule); padding: 0.1em 0.5em; }
+  .being { color: var(--being); }
+
+  /*
+   * Below the three-column width the row stacks: the date leads, the metadata
+   * follows the writing. Squeezing three columns into a phone turns the title
+   * into a one-word-per-line ladder, which is the one thing a listing cannot
+   * afford.
+   */
+  @media (max-width: 44rem) {
+    li {
+      grid-template-columns: 1fr;
+    }
+
+    .meta {
+      justify-content: flex-start;
+      margin-block-start: var(--space-2);
+    }
+  }
+  @container (max-width: 52rem) {
+    li { grid-template-columns: 7rem minmax(0, 1fr); }
+    .compact li { grid-template-columns: 10rem minmax(0, 1fr); }
+    .meta { grid-column: 2; justify-content: flex-start; margin-block-start: 0.75rem; }
+  }
+  @container (max-width: 30rem) {
+    li, .compact li { grid-template-columns: minmax(0, 1fr); }
+    .meta { grid-column: 1; }
+    .compact .date-group { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; margin-block-end: 0.25rem; }
+    .compact-meta { margin: 0; }
+  }
+</style>

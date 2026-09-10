@@ -1,6 +1,8 @@
 ---
-import Pill from '../../../components/Pill.astro';
+import Listing from '../../../components/Listing.astro';
+import Mark from '../../../components/Mark.astro';
 import Base from '../../../layouts/Base.astro';
+import { getAuthor } from '../../../site.ts';
 import { listPosts, listTags } from '../../../posts.ts';
 
 /**
@@ -9,81 +11,40 @@ import { listPosts, listTags } from '../../../posts.ts';
  * Only tags that are actually in use get a page. A tag with no posts would be a
  * 200 that says nothing, and the redirect map already sends the old empty tags
  * somewhere useful.
+ *
+ * The page is the front page with one chip lit. There is no second heading
+ * announcing the tag: the lit chip already says which filter is on, and a
+ * heading repeating it would be the same word twice in a row.
  */
 export async function getStaticPaths() {
   const posts = await listPosts();
   const tags = await listTags();
   return tags.map(({ tag }) => ({
     params: { tag },
-    props: { tag, posts: posts.filter((p) => p.data.tags.includes(tag)) },
+    props: { tag, posts: posts.filter((p) => p.data.tags.includes(tag)), tags, total: posts.length },
   }));
 }
 
-const { tag, posts } = Astro.props;
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const { tag, posts, tags, total } = Astro.props;
+const author = await getAuthor();
 ---
 
-<Base
-  title={`Тема: ${tag}`}
-  description={`Записи по теме ${tag}.`}
-  feed={`/feeds/${tag}.xml`}
->
-  <h1 class="head">
-    <span class="field-label">тема</span>
-    <Pill tag={tag} />
-  </h1>
+<Base title={`Тема: ${tag}`} description={`Записи по теме ${tag}.`} feed={`/feeds/${tag}.xml`} wide>
+  <h1 class="sr-only">Тема: {tag}</h1>
 
-  <ul class="list">
-    {
-      posts.map((post) => (
-        <li>
-          <h2 class="title">
-            <a href={`/posts/${post.id}/`}>{post.data.title}</a>
-          </h2>
-          <p class="summary">{post.data.summary}</p>
-          <p class="utility line">
-            <time datetime={iso(post.data.date)}>{iso(post.data.date)}</time>
-          </p>
-        </li>
-      ))
-    }
-  </ul>
+  <Mark name={author?.name} tags={tags} total={total} active={tag} />
 
-  <p class="utility feed">
+  <Listing posts={posts} />
+
+  <p class="feed">
     <a href={`/feeds/${tag}.xml`}>подписаться только на эту тему</a>
   </p>
 </Base>
 
 <style>
-  .head {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    font-size: var(--step-1);
-  }
-
-  .list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .list > li + li {
-    margin-block-start: var(--space-4);
-    padding-block-start: var(--space-3);
-    border-block-start: 1px solid var(--rule);
-  }
-
-  .title {
-    font-size: var(--step-1);
-    margin-block: 0 var(--space-1);
-  }
-
-  .summary {
-    margin-block-end: var(--space-1);
-  }
-
-  .line {
-    margin: 0;
+  .feed {
+    margin-block-start: var(--space-5);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
   }
 </style>

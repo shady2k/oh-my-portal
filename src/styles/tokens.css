@@ -1,48 +1,71 @@
 /*
  * Design tokens — design §12.
  *
- * Cream, monochrome, a great deal of whitespace. Colour appears in exactly two
- * places: the highlight behind a heading and the pastel pills that label
- * sections. Everything else is ink on paper, which is what makes those two
- * places read as deliberate.
- *
- * There are no gradients, no shadows and no illustration slots on purpose:
- * every one of them is a thing to maintain and a way for pages to drift apart.
+ * Field journal: warm paper, large type, fine rules and a red editorial accent.
+ * Tags are neutral outlines; the legacy topic palette remains available to
+ * other consumers. No decorative telemetry or mandatory illustration slots.
  */
 :root {
-  /* --- paper and ink --- */
-  --paper: #faf7f0;
-  --paper-sunk: #f3efe4;
-  --ink: #191714;
-  --ink-quiet: #6b6459;
-  --rule: #e2dccd;
-
-  /* --- the two places colour is allowed --- */
-  --highlight: #ffe9a8;
-  --pill-homelab: #dbe9dd;
-  --pill-pkms: #e5dced;
-  --pill-kubernetes: #d8e4ee;
-  --pill-security: #f0dcd8;
-  --pill-ai-agents: #e8e2d2;
-  --pill-blogging: #ecdfd2;
-  --pill-default: #e8e4da;
+  /*
+   * Warm near-white paper keeps long reading comfortable and code in the same
+   * visual family. Quiet text and the accent both retain AA contrast on paper.
+   */
+  --paper: #fdfbf7;
+  --paper-sunk: #f3f0e9;
+  --ink: #20201e;
+  --ink-quiet: #68655f;
+  --rule: #d6d1c8;
+  --accent: #bf3025;
 
   /*
-   * A text face for prose, monospace for utility text. Both are system stacks:
-   * a webfont would be one more request against a CDN whose reachability is
-   * exactly the constraint that ruled out half the hosting options (design §7),
-   * and Georgia's Cyrillic is better than most things we would ship ourselves.
+   * The tag palette. A tag is the same colour everywhere it appears, so the
+   * colour becomes a second name for it — which is the whole reason to spend
+   * colour here rather than on headings or buttons.
+   *
+   * Each is light enough that --ink on it clears AA several times over, so a
+   * chip never needs its own text colour.
    */
-  --face-prose: Georgia, 'Noto Serif', 'Times New Roman', serif;
+  --chip-homelab: #dbf0e2;
+  --chip-pkms: #e8e3f7;
+  --chip-kubernetes: #dce9f9;
+  --chip-security: #f9dde7;
+  --chip-ai-agents: #fce4d3;
+  --chip-blogging: #f3ecd7;
+  --chip-default: #eceaf0;
+
+  /*
+   * §8's marker for `author: being`, and the only hue outside the tag palette.
+   * Deeper than a chip on purpose: it is a byline, not a label.
+   */
+  --being: #5b4a86;
+
+  /*
+   * A search hit inverts rather than tinting — every tint in this design already
+   * means "tag", and a hit is not a tag.
+   */
+  --mark-ground: var(--ink);
+  --mark-ink: var(--paper);
+
+  /*
+   * One sans for everything a person reads, monospace for everything a machine
+   * produced — dates, sizes, paths, code. Both are system stacks: a webfont is
+   * one more request against a CDN whose reachability is exactly the constraint
+   * that ruled out half the hosting options (design §7). Self-hosting a face
+   * from our own origin would dodge that and is the way to a typeface of our
+   * own, when we want one.
+   */
+  --face-prose: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
   --face-utility: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
 
   /* --- scale --- */
-  --measure: 34rem; /* the reading column; everything else is margin */
+  --measure: 40rem; /* the reading column; everything else is margin */
+  --frame: 72rem; /* room for editorial marginalia on a wide screen */
+
   --step--1: 0.8125rem;
   --step-0: 1.0625rem;
   --step-1: 1.375rem;
   --step-2: 1.75rem;
-  --step-3: 2.25rem;
+  --step-3: clamp(2.4rem, 4.6vw, 4.25rem);
 
   --space-1: 0.375rem;
   --space-2: 0.75rem;

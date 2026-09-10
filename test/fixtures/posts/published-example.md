@@ -2,6 +2,12 @@
 title: "Опубликованная запись"
 slug: published-example
 date: 2026-01-02
+updated: 2026-02-03
+revisions:
+  - date: 2026-02-03
+    before: Достаточно перезапускать прокси.
+    after: Нужно дождаться готовности туннеля.
+    reason: Повторная проверка выявила зависимость от порядка запуска.
 kind: article
 status: published
 author: human

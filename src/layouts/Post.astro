@@ -3,10 +3,15 @@ import type { CollectionEntry } from 'astro:content';
 
 import Author from '../components/Author.astro';
 import Core from '../components/Core.astro';
-import Pill from '../components/Pill.astro';
 import Share from '../components/Share.astro';
 import Subscribe from '../components/Subscribe.astro';
+import Tag from '../components/Tag.astro';
+import { twinHash } from '../history.ts';
+import { listPosts } from '../posts.ts';
+import { articleMarkdown } from '../projections.ts';
 import Base from './Base.astro';
+import { displayDate } from '../dates.ts';
+import Revision from '../components/Revision.astro';
 
 interface Props {
   post: CollectionEntry<'posts'>;
@@ -16,9 +21,22 @@ const { post } = Astro.props;
 const { data } = post;
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/* The same three facts the archive row carries, in the same order, so an
+   article and its line in the listing agree on what it is. */
+const bytes = Buffer.byteLength(articleMarkdown(post, Astro.site!), 'utf8');
+const size = bytes < 1024 ? `${bytes} Б` : `${(bytes / 1024).toFixed(1)} КБ`;
+const hash = twinHash(post, Astro.site!).slice(0, 12);
+
+/* Newest first, so the *next* article is the earlier one in the array. */
+const all = await listPosts();
+const at = all.findIndex((entry) => entry.id === post.id);
+const newer = at > 0 ? all[at - 1] : undefined;
+const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
 ---
 
-<Base title={data.title} description={data.summary} lang={data.lang} noindex={data.status === 'draft'}>
+<Base title={data.title} description={data.summary} lang={data.lang} noindex={data.status === 'draft'} wide>
+  <div class="journal-page">
   {/*
     Pagefind indexes only what carries `data-pagefind-body`, and a page without
     one is left out entirely — so listings, navigation and the status-line
@@ -34,42 +52,35 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   */}
   <article data-pagefind-body>
     <header>
-      <h1 class="highlight"><span data-pagefind-meta="title">{data.title}</span></h1>
       {/* Read back by /search/ to render a result without fetching the page. */}
       <meta data-pagefind-meta={`summary:${data.summary}`} />
       <meta data-pagefind-meta={`date:${iso(data.date)}`} />
 
-      {/* Utility-style field labels rather than decorative subheadings (§12). */}
-      <dl class="meta" data-pagefind-ignore>
-        <dt class="field-label">дата</dt>
-        <dd><time datetime={iso(data.date)} class="utility">{iso(data.date)}</time></dd>
+      {/*
+        Date, tags and weight, above the title rather than under it: they are how
+        a reader decides whether to start, and that decision comes first. The
+        weight is the twin's exact byte length — the same number the archive row
+        shows, from the same function that serves it (§6).
+      */}
+      <p class="topline" data-pagefind-ignore>
+        <time datetime={iso(data.date)}>{displayDate(data.date)}</time>
+        {data.tags.map((tag) => <Tag tag={tag} href={`/tag/${tag}/`} />)}
+        <span class="size">{size}</span>
+      </p>
 
-        {
-          data.updated && (
-            <>
-              <dt class="field-label">обновлено</dt>
-              <dd>
-                <time datetime={iso(data.updated)} class="utility">
-                  {iso(data.updated)}
-                </time>
-              </dd>
-            </>
-          )
-        }
+      <h1><span data-pagefind-meta="title">{data.title}</span></h1>
+      <p class="standfirst">{data.summary}</p>
 
-        {
-          data.tags.length > 0 && (
-            <>
-              <dt class="field-label">темы</dt>
-              <dd class="tags">
-                {data.tags.map((tag) => (
-                  <Pill tag={tag} href={`/tag/${tag}/`} />
-                ))}
-              </dd>
-            </>
-          )
-        }
-      </dl>
+      {/* Kept out of the top line: neither is news, and both matter only once
+          someone is already reading. */}
+      {
+        (data.updated || data.author === 'being') && (
+          <p class="under" data-pagefind-ignore>
+            {data.updated && <span>обновлено {displayDate(data.updated)}</span>}
+            {data.author === 'being' && <span class="being">написано существом</span>}
+          </p>
+        )
+      }
 
       {/*
         `tools` says what the article covers (§4). It sits outside the ignored
@@ -89,6 +100,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       }
     </header>
 
+    {data.revisions?.length && <div id="revisions">{[...data.revisions].sort((a, b) => b.date.getTime() - a.date.getTime()).map((revision) => <Revision revision={revision} author={data.author} />)}</div>}
     {data.recipe && <Core recipe={data.recipe} />}
 
     <div class="prose">
@@ -112,42 +124,301 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     <Share url={new URL(Astro.url.pathname, Astro.site)} title={data.title} />
   </article>
 
+  <aside class="article-margin" aria-label="На полях" data-pagefind-ignore>
+    <p class="field-label">На полях</p>
+    {data.recipe && <div class="margin-entry"><p>Проверено на практике</p><time class="utility" datetime={iso(data.recipe.verified_on)}>{displayDate(data.recipe.verified_on)}</time></div>}
+    {data.updated && <div class="margin-entry"><p>Последнее обновление</p><time class="utility" datetime={iso(data.updated)}>{displayDate(data.updated)}</time></div>}
+    <div class="margin-entry">
+      <p>Для вашего агента</p>
+      <p class="margin-caption">Текст, команды и источники одним файлом.</p>
+      <a href={`/posts/${post.id}.md`}>Открыть Markdown ↗</a>
+      <p class="utility weight">{size}</p>
+    </div>
+  </aside>
+
+  {/*
+    Where the article ends, three things a reader might want next: the file it
+    is, and the two articles either side of it. The provenance link is small on
+    purpose — it is for the reader who wants to check, not a claim shouted at
+    everyone else.
+  */}
+  <nav class="after-nav" aria-label="соседние записи">
+    <p class="provenance-link">
+      <a href={`/posts/${post.id}/integrity/`}>провенанс · sha256 {hash}…</a>
+    </p>
+    <ul class="neighbours">
+      {newer && (
+        <li class="newer">
+          <span class="dir">позже</span>
+          <a href={`/posts/${newer.id}/`}>{newer.data.title}</a>
+        </li>
+      )}
+      {older && (
+        <li class="older">
+          <span class="dir">раньше</span>
+          <a href={`/posts/${older.id}/`}>{older.data.title}</a>
+        </li>
+      )}
+    </ul>
+  </nav>
+
   {/* R5, R4, R3: the end of an article is where reader interest peaks. */}
   <Author />
   <Subscribe />
+  </div>
 </Base>
 
+<script>
+  /*
+   * A copy button per code block.
+   *
+   * Built by script rather than rendered by the page: the clipboard needs
+   * JavaScript, and a button that cannot do its job is worse than no button —
+   * the same rule the search box follows. Without JavaScript the block is still
+   * a block, selectable and scrollable, and nothing promises otherwise.
+   *
+   * The wrapper and its header are created here too. They cannot be in the
+   * markup: the HTML comes from the markdown pipeline. The header rather than an
+   * overlay, because a button floating over the block covers the first line —
+   * which in a shell block is the command. It also gives the language somewhere
+   * to go, and Shiki already knows it.
+   */
+  const LABEL = 'копировать';
+
+  for (const block of document.querySelectorAll<HTMLPreElement>('.prose pre')) {
+    const frame = document.createElement('div');
+    frame.className = 'code';
+    block.replaceWith(frame);
+    frame.append(block);
+
+    const header = document.createElement('div');
+    header.className = 'code-head';
+    /* Otherwise "копировать" lands in the search index on every article. */
+    header.setAttribute('data-pagefind-ignore', '');
+
+    const language = document.createElement('span');
+    language.className = 'lang';
+    language.textContent = block.dataset.language ?? '';
+    header.append(language);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = LABEL;
+
+    let restore: ReturnType<typeof setTimeout> | undefined;
+    button.addEventListener('click', async () => {
+      clearTimeout(restore);
+      try {
+        await navigator.clipboard.writeText(block.innerText);
+        button.textContent = 'скопировано';
+      } catch {
+        /* Denied permission, or a page served over plain http. Say what
+           happened rather than claiming a success that did not occur. */
+        button.textContent = 'не вышло — выделите вручную';
+      }
+      restore = setTimeout(() => {
+        button.textContent = LABEL;
+      }, 2000);
+    });
+
+    header.append(button);
+    frame.prepend(header);
+  }
+</script>
+
 <style>
+  .journal-page { display: grid; grid-template-columns: minmax(0, var(--measure)) minmax(0, 15rem); column-gap: clamp(2rem, 7vw, 7rem); justify-content: space-between; }
+  .journal-page > :global(*) { min-inline-size: 0; grid-column: 1; }
+  .journal-page > .article-margin { grid-column: 2; grid-row: 1; }
+  .article-margin { align-self: start; margin-block-start: 4rem; padding-inline-start: 1.5rem; border-inline-start: 1px solid var(--rule); font-size: 0.9375rem; }
+  .margin-entry { padding-block: 1.25rem; border-block-start: 1px solid var(--rule); }
+  .margin-entry p { margin-block-end: 0.5rem; }
+  .margin-caption { color: var(--ink-quiet); }
+  .weight { margin-block: 0.75rem 0; }
+  .standfirst { font-size: var(--step-1); color: var(--ink-quiet); margin-block: 1.5rem 2rem; }
+  @media (max-width: 60rem) {
+    .journal-page { grid-template-columns: minmax(0, 1fr); max-inline-size: var(--measure); margin-inline: auto; }
+    .journal-page > .article-margin { grid-column: 1; grid-row: auto; margin-block-start: 2rem; }
+  }
   h1 {
     margin-block-start: var(--space-3);
   }
 
-  .meta {
-    display: grid;
-    grid-template-columns: minmax(6rem, auto) 1fr;
-    gap: var(--space-1) var(--space-3);
-    margin-block: 0 var(--space-4);
-  }
-
-  .meta dt {
-    padding-block-start: 0.28em;
-  }
-
-  .meta dd {
-    margin: 0;
-  }
-
-  .tags {
+  /*
+   * The top line: when, what about, how big. Set tight above the title so the
+   * two read as one block rather than as a heading with a stray line over it.
+   */
+  .topline {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1);
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-block: var(--space-4) var(--space-2);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    color: var(--ink-quiet);
   }
 
+  .topline time,
+  .size {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1 {
+    margin-block: 0 var(--space-2);
+  }
+
+  .under {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-block: 0 var(--space-4);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    color: var(--ink-quiet);
+  }
+
+  /* §8: the inhabitant's byline, and the only place this hue appears. */
+  .being {
+    color: var(--being);
+  }
+
+  /*
+   * Everything from here to the heading markers is `:global`, and not by taste:
+   * the article's HTML arrives through `<slot />` from the markdown pipeline and
+   * the wrapper and its header are built at runtime, so neither ever carries
+   * this component's scope attribute. A scoped selector matches none of them and
+   * fails silently — which it did, leaving a header the width of its own text
+   * over a block that never widened.
+   */
+
+  /*
+   * The block stays in the reading column.
+   *
+   * An earlier version widened it to the frame so long commands would fit. It
+   * bought a few characters and cost the page its left edge: prose started in
+   * one place and every code block in another, which on a text-first site is a
+   * worse trade than the one it solved. Lines that do not fit wrap instead, with
+   * a hanging indent (base.css) so a continuation reads as the same command.
+   */
+  .prose :global(.code) {
+    margin-block: var(--space-3);
+  }
+
+  .prose :global(.code pre) {
+    margin: 0;
+    padding-block-start: var(--space-2);
+  }
+
+  /*
+   * The header shares the block's ground and sits above it, so the two read as
+   * one object rather than as a toolbar bolted on.
+   */
+  .prose :global(.code-head) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    background: var(--paper-sunk);
+    padding: var(--space-2) var(--space-3) 0;
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    color: var(--ink-quiet);
+  }
+
+  /* Quiet, and never hover-only: a phone has no hover, and this is exactly the
+     control a phone reader wants most. */
+  .prose :global(.copy) {
+    background: none;
+    color: var(--ink-quiet);
+    border: 1px solid var(--rule);
+    border-radius: 0.3em;
+    padding: 0.15em 0.5em;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .prose :global(.copy:hover),
+  .prose :global(.copy:focus-visible) {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /*
+   * Headings carry their own markdown marker. It is not an ornament: §1 makes a
+   * markdown file the source of truth and §6 serves it at an address one click
+   * away, so showing the `##` says what the page actually is. The marker is
+   * generated rather than written, so it can never disagree with the level.
+   */
+  .prose :global(h2)::before,
+  .prose :global(h3)::before {
+    color: var(--ink-quiet);
+    font-family: var(--face-utility);
+    font-size: 0.8em;
+    font-weight: 400;
+    padding-inline-end: 0.5em;
+  }
+
+  .prose :global(h2)::before {
+    content: none;
+  }
+
+  .prose :global(h3)::before {
+    content: none;
+  }
+
+  /* The negative top margin here used to pull this under a metadata block that
+     no longer sits above it. */
   .tools {
     display: flex;
     flex-wrap: wrap;
+    align-items: baseline;
     gap: var(--space-2);
-    margin-block: calc(-1 * var(--space-3)) var(--space-4);
+    margin-block: 0 var(--space-4);
+  }
+
+  .after-nav {
+    margin-block-start: var(--space-5);
+    padding-block-start: var(--space-3);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .provenance-link {
+    margin: 0 0 var(--space-3);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+  }
+
+  .neighbours {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .neighbours li {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .dir {
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    color: var(--ink-quiet);
+  }
+
+  .neighbours a {
+    font-size: var(--step-1);
+    font-weight: 620;
+    text-decoration: none;
+  }
+
+  .neighbours a:hover,
+  .neighbours a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
   }
 
   .after {
