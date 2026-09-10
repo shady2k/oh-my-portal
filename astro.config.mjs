@@ -10,17 +10,56 @@ import { codeTheme, syntaxVariables } from './src/styles/code-theme.ts';
 // variables arrive empty far more often than they arrive absent.
 const site = process.env.SITE_URL || 'https://example.com';
 
+/**
+ * Content images.
+ *
+ * They live beside the articles that reference them, in the content repository,
+ * and the articles reference them by absolute path (`/images/<slug>/01.webp`).
+ * That choice is what keeps the markdown twin honest — the twin is the source
+ * body verbatim, so a relative path would resolve against nothing on the
+ * agent's side — but it leaves the files outside anything Astro copies.
+ *
+ * `public/` cannot be the answer: it belongs to the engine and carries the
+ * fonts, the og card and robots.txt. So the images are copied in after the
+ * build, and `scripts/check-outputs.ts` fails the build if any picture an
+ * article references is missing — a broken image is invisible in a diff and
+ * obvious to every reader, which is the wrong way round.
+ */
+/** @type {import('astro').AstroIntegration} */
+const contentImages = {
+  name: 'content-images',
+  hooks: {
+    'astro:build:done': async ({ dir, logger }) => {
+      const from = process.env.IMAGES_DIR;
+      if (!from) return logger.info('IMAGES_DIR не задан — картинки контента не копируются');
+      const { cp, readdir } = await import('node:fs/promises');
+      await cp(from, new URL('images/', dir), {
+        recursive: true,
+        filter: (src) => !src.endsWith('manifest.json'),
+      });
+      const slugs = await readdir(from, { withFileTypes: true });
+      logger.info(`картинки контента: ${slugs.filter((d) => d.isDirectory()).length} статей`);
+    },
+  },
+};
+
+/** @type {import('astro').AstroIntegration} */
+const uiKit = {
+  name: 'field-journal-ui-kit',
+  hooks: {
+    'astro:config:setup': ({ injectRoute }) => {
+      injectRoute({ pattern: '/_ui/', entrypoint: './src/ui-kit/index.astro' });
+      injectRoute({ pattern: '/_ui/index.md', entrypoint: './src/ui-kit/index.md.ts' });
+    },
+  },
+};
+
 export default defineConfig({
   site,
-  integrations: process.env.UI_KIT === '1' ? [{
-    name: 'field-journal-ui-kit',
-    hooks: {
-      'astro:config:setup': ({ injectRoute }) => {
-        injectRoute({ pattern: '/_ui/', entrypoint: './src/ui-kit/index.astro' });
-        injectRoute({ pattern: '/_ui/index.md', entrypoint: './src/ui-kit/index.md.ts' });
-      },
-    },
-  }] : [],
+  integrations: [
+    contentImages,
+    ...(process.env.UI_KIT === '1' ? [uiKit] : []),
+  ],
   server: {
     /*
      * `127.0.0.1`, not the default `localhost`.
