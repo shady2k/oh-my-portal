@@ -1,0 +1,9 @@
+<!-- Run in the head before styles paint; CSS handles the system preference. -->
+<script is:inline>
+  (() => {
+    try {
+      const theme = localStorage.getItem('portal-theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch { /* System theme still works when storage is unavailable. */ }
+  })();
+</script>

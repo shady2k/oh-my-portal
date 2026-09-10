@@ -598,6 +598,18 @@ or it becomes a second job.
 
 ## 12. Design system
 
+### Dark theme (2026-09-10)
+
+The maintainer approved a dark variant: warm graphite, soft light ink, muted
+secondary text and a lighter red editorial accent. Both palettes are paired in
+`tokens.css`; type, spacing and component structure stay the same. The header
+selector offers Auto, Light and Dark. Auto follows the system, including without
+JavaScript. Explicit choices persist and apply before first paint.
+
+Raster drawings retain a dimmed light paper surface and their original red marks.
+SVG rules and RSS drawings follow the page ink. Code colours use semantic tokens
+in both themes. The UI kit previews these same components and theme preferences.
+
 ### Shared UI kit (2026-09-10)
 
 The component contracts and live catalog are maintained in

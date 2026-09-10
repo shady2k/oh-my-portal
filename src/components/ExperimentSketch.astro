@@ -68,7 +68,7 @@ const nodes = [
   .illustrated { padding-block-end: 1.5rem; }
   .compact.illustrated { padding-block-end: 0; }
   .compact .annotation { font-size: clamp(1.0625rem, 1.65vw, 1.3rem); }
-  .art-plane { position: relative; }
+  .art-plane { position: relative; --paper: var(--illustration-paper); --accent: var(--illustration-accent); background: var(--paper); }
   .art-link { display: block; background: var(--paper); cursor: zoom-in; }
   .art-link :global(img) { display: block; inline-size: 100%; block-size: auto; mix-blend-mode: multiply; }
   .annotation-arrows { position: absolute; inset: 0; inline-size: 100%; pointer-events: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round; }

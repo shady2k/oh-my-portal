@@ -85,7 +85,7 @@
 <style>
   dialog { padding: 0; border: 0; max-inline-size: none; max-block-size: none; inline-size: 100%; block-size: 100%; background: transparent; color: var(--ink); }
   dialog[open] { display: grid; place-items: center; }
-  dialog::backdrop { background: rgb(32 32 30 / 72%); }
+  dialog::backdrop { background: var(--backdrop); }
   .viewer-panel { background: var(--paper); padding: var(--space-3); inline-size: min(100% - 2rem, 52rem); max-block-size: calc(100dvh - 2rem); overflow: auto; }
   .viewer-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-block-end: var(--space-2); }
   h2 { font-size: var(--step-0); margin: 0; }

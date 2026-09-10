@@ -24,6 +24,7 @@ const colors = ['paper', 'paper-sunk', 'ink', 'ink-quiet', 'rule', 'accent'];
   </nav>
   <section id="type">
     <h2>Типографика и цвет</h2>
+    <p class="ui-reading">Переключатель темы в шапке: экран следует настройке системы; солнце и луна сохраняют светлый или тёмный режим. Рисунки остаются на бумаге, остальная палитра меняется целиком.</p>
     <p class="utility">IBM Plex Sans · IBM Plex Mono · Caveat для авторских пометок</p>
     <div class="swatches">{colors.map((color) => <div><span style={`background: var(--${color})`}></span><code>{color}</code></div>)}</div>
     <TypedHeadline text="Собираю свою цифровую жизнь." />

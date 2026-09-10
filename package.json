@@ -15,7 +15,8 @@
     "verify": "npm run check && npm run test",
     "screenshot": "node scripts/screenshot.ts",
     "ui": "node scripts/ui-kit.ts",
-    "test:ui": "node scripts/check-ui.ts"
+    "test:ui": "node scripts/check-ui.ts",
+    "test:theme": "node scripts/check-theme.ts"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",

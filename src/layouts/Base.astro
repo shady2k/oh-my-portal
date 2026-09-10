@@ -2,6 +2,8 @@
 import { getAuthor } from '../site.ts';
 import '../styles/base.css';
 
+import ThemeInit from '../components/ui/ThemeInit.astro';
+import ThemePicker from '../components/ui/ThemePicker.astro';
 import SiteFooter from '../components/ui/SiteFooter.astro';
 import ImageViewer from '../components/ui/ImageViewer.astro';
 
@@ -41,6 +43,7 @@ const sections = [
 <html lang={lang}>
   <head>
     <meta charset="utf-8" />
+    <ThemeInit />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -75,6 +78,7 @@ const sections = [
           })
         }
       </nav>
+      <ThemePicker />
     </header>
 
     <main id="main" class="frame">
@@ -156,7 +160,8 @@ const sections = [
   }
 
   .site-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
@@ -171,7 +176,9 @@ const sections = [
   }
 
   @media (max-width: 40rem) {
-    .site-header { align-items: flex-start; flex-direction: column; gap: 0; }
+    .site-header { grid-template-columns: minmax(0, 1fr) auto; gap: 0 var(--space-2); }
+    .site-header > :global(.theme-picker) { grid-column: 2; grid-row: 1; }
+    .masthead { grid-column: 1 / -1; grid-row: 2; }
     .masthead { justify-content: flex-start; padding-block: var(--space-2); gap: 1.25rem; }
     .wordmark { padding-block-start: var(--space-2); }
   }

@@ -1,7 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-import { codeTheme } from './src/styles/code-theme.ts';
+import { codeTheme, syntaxVariables } from './src/styles/code-theme.ts';
 
 // The public URL is deployment data, not engine data: this repository carries no
 // site of its own (design §2). CI sets SITE_URL; the placeholder only keeps
@@ -59,6 +59,14 @@ export default defineConfig({
            * writes a background here and the token would silently stop being
            * the single source for it.
            */
+          span(node) {
+            if (typeof node.properties.style === 'string') {
+              node.properties.style = node.properties.style.replace(/color:\s*(#[0-9a-f]{6})/gi, (value, hex) => {
+                const variable = syntaxVariables[hex.toLowerCase()];
+                return variable ? `color:var(${variable})` : value;
+              });
+            }
+          },
           pre(node) {
             delete node.properties.style;
           },

@@ -14,6 +14,7 @@ catalog can be built with `UI_KIT=1 npm run build:examples`.
 | `styles/tokens.css` | Palette, local font families, type scale, spacing, frame and reading measure |
 | `styles/ui.css` | Reading column, editorial grid, bounded aside, topic row, button and states |
 | `layouts/Base.astro` | One 72rem outer frame for header, main and footer on every page |
+| `ThemeInit.astro`, `ThemePicker.astro` | Pre-paint choice, system/light/dark segmented radio control, safe persistence and cross-tab sync |
 | `PageHeader.astro` | Page title, optional eyebrow, description and navigation slot |
 | `TypedHeadline.astro` | Complete accessible heading, reserved height, brief typing and square cursor; static without JS or with reduced motion |
 | `EditorialNote.astro` | Quiet question or red authored observation, label and body slot |
@@ -42,3 +43,21 @@ Run `npm run verify`, `npm run build:examples`, then `npm run test:ui -- URL`
 against preview. `npm run screenshot -- /tmp/portal-ui URL` captures the main
 page types on desktop and mobile. The UI check exercises the dialog with mouse
 and keyboard, no-JS fallback, reduced motion, layout stability and common frame.
+
+## Colour themes
+
+`tokens.css` pairs light and dark colours using CSS `light-dark()`. System
+preference sets `color-scheme`; explicit `data-theme` overrides it. Without JS,
+CSS still follows the system and the unavailable selector stays hidden. A small
+head script reads `portal-theme` before painting. Storage failures preserve
+in-page switching; selecting the system icon removes the override. Other tabs stay in sync.
+
+Graphite and red annotations keep a light paper surface through local illustration
+tokens. Never invert photographs or artwork. Shiki token colours are mapped to
+semantic `--syntax-*` variables during the build. Both palettes must keep normal
+text and code at 4.5:1 contrast or above; check real computed colours in the browser.
+`npm run test:theme -- URL /tmp/theme-shots` checks preferences and writes previews.
+
+The theme control is one native radio group: system (monitor), light (sun), dark
+(moon). Arrow keys switch modes, Tab leaves the group, and a red underline marks
+the selected segment. Every icon has a text label for assistive technology.

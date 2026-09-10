@@ -1,23 +1,5 @@
-/**
- * The syntax theme — design §12.
- *
- * Shiki emits token colours as inline styles, so they cannot come from
- * `tokens.css` the way every other colour on the site does. This file is where
- * they live instead, and it is the only place in the engine that names a colour
- * outside that stylesheet.
- *
- * The palette is the tag palette, darkened until it is text rather than a
- * background: the same six hues carry code that carry topics, so a code block
- * belongs to the page instead of arriving from a different design. Every value
- * clears AA on `--paper-sunk`, which is the ground a block is set on.
- *
- * Deliberately few scopes. A theme with forty rules is a theme nobody can hold
- * in their head, and the extra thirty-five distinguish things a reader of a
- * homelab article never needed distinguished.
- *
- * The background is absent on purpose — a transformer drops the wrapper's inline
- * style so `--paper-sunk` stays the single source for it (astro.config.mjs).
- */
+/** Shiki uses hex while tokenizing; the build maps its output to semantic CSS
+ * variables so both palettes remain controlled by tokens.css. */
 
 /** Tag mint, as text. Strings: the most common coloured run in a shell block. */
 const GREEN = '#2f6b45';
@@ -77,4 +59,14 @@ export const codeTheme = {
       settings: { foreground: QUIET },
     },
   ],
+};
+
+export const syntaxVariables: Record<string, string> = {
+  [GREEN]: '--syntax-green',
+  [VIOLET]: '--syntax-violet',
+  [BLUE]: '--syntax-blue',
+  [MAGENTA]: '--syntax-magenta',
+  [RUST]: '--syntax-rust',
+  [INK]: '--ink',
+  [QUIET]: '--syntax-comment',
 };

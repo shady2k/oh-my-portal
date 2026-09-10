@@ -6,16 +6,17 @@
  * other consumers. No decorative telemetry or mandatory illustration slots.
  */
 :root {
+  color-scheme: light;
   /*
    * Warm near-white paper keeps long reading comfortable and code in the same
    * visual family. Quiet text and the accent both retain AA contrast on paper.
    */
-  --paper: #fdfbf7;
-  --paper-sunk: #f3f0e9;
-  --ink: #20201e;
-  --ink-quiet: #68655f;
-  --rule: #d6d1c8;
-  --accent: #bf3025;
+  --paper: light-dark(#fdfbf7, #1d1e1c);
+  --paper-sunk: light-dark(#f3f0e9, #272824);
+  --ink: light-dark(#20201e, #e9e5dc);
+  --ink-quiet: light-dark(#68655f, #ada89e);
+  --rule: light-dark(#d6d1c8, #4b4d46);
+  --accent: light-dark(#bf3025, #ef8978);
 
   /*
    * The tag palette. A tag is the same colour everywhere it appears, so the
@@ -25,19 +26,19 @@
    * Each is light enough that --ink on it clears AA several times over, so a
    * chip never needs its own text colour.
    */
-  --chip-homelab: #dbf0e2;
-  --chip-pkms: #e8e3f7;
-  --chip-kubernetes: #dce9f9;
-  --chip-security: #f9dde7;
-  --chip-ai-agents: #fce4d3;
-  --chip-blogging: #f3ecd7;
-  --chip-default: #eceaf0;
+  --chip-homelab: light-dark(#dbf0e2, #293c30);
+  --chip-pkms: light-dark(#e8e3f7, #363042);
+  --chip-kubernetes: light-dark(#dce9f9, #2b3544);
+  --chip-security: light-dark(#f9dde7, #422f37);
+  --chip-ai-agents: light-dark(#fce4d3, #42342c);
+  --chip-blogging: light-dark(#f3ecd7, #3b382c);
+  --chip-default: light-dark(#eceaf0, #343532);
 
   /*
    * §8's marker for `author: being`, and the only hue outside the tag palette.
    * Deeper than a chip on purpose: it is a byline, not a label.
    */
-  --being: #5b4a86;
+  --being: light-dark(#5b4a86, #bea8e0);
 
   /*
    * A search hit inverts rather than tinting — every tint in this design already
@@ -54,6 +55,19 @@
    */
   --face-prose: 'IBM Plex Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
   --face-utility: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  /* Raster pencil drawings keep their paper and red ink in either theme. */
+  --illustration-paper: light-dark(#fdfbf7, #e5e0d5);
+  --illustration-accent: light-dark(#bf3025, #ad3026);
+  --backdrop: light-dark(rgb(32 32 30 / 72%), rgb(0 0 0 / 78%));
+
+  /* Semantic colours used by Shiki's generated spans. */
+  --syntax-green: light-dark(#2f6b45, #a5c89d);
+  --syntax-violet: light-dark(#5d4c96, #c4afe3);
+  --syntax-blue: light-dark(#2a5d92, #9ebfe0);
+  --syntax-magenta: light-dark(#93375f, #dda8be);
+  --syntax-rust: light-dark(#96522a, #dfb08c);
+  --syntax-comment: light-dark(#666671, #aaa69d);
 
   /* --- scale --- */
   --title-page: clamp(2.25rem, 3.65vw, 3.25rem);
@@ -75,3 +89,10 @@
   --space-4: 3rem;
   --space-5: 6rem;
 }
+
+/* CSS follows the OS without JS. Explicit choices override it before first paint. */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
