@@ -110,14 +110,28 @@ export const project = z.strictObject({
   sketch: z.strictObject({
     /** Optional built-in illustrated plate; labels remain available to plain SVG. */
     artwork: z.enum(['memory-study']).optional(),
+    /**
+     * A picture of the project from the content images, in place of the built-in
+     * plate. Under /images/ for the same reason as the portrait: check-outputs.ts
+     * proves it is in the build, and no other host learns about every reader.
+     */
+    image: z
+      .string()
+      .regex(/^\/images\/[^?#]+\.(?:svg|webp|png|jpe?g|avif)$/, 'an image under /images/, e.g. /images/projects/drawing.svg')
+      .optional(),
     annotations: z.tuple([
       z.string().min(1).max(50), z.string().min(1).max(50), z.string().min(1).max(50),
     ]).optional(),
-    center: z.string().min(1).max(18),
-    labels: z.tuple([z.string().min(1).max(18), z.string().min(1).max(18), z.string().min(1).max(18), z.string().min(1).max(18)]),
+    /** The drawn diagram's centre and four labels. A picture needs neither. */
+    center: z.string().min(1).max(18).optional(),
+    labels: z.tuple([z.string().min(1).max(18), z.string().min(1).max(18), z.string().min(1).max(18), z.string().min(1).max(18)]).optional(),
     caption: z.string().min(1).max(240),
-  }).refine((sketch) => !sketch.annotations || !!sketch.artwork, {
-    error: 'Illustrated annotations require an artwork', path: ['annotations'],
+  }).refine((sketch) => !sketch.annotations || !!sketch.artwork || !!sketch.image, {
+    error: 'Illustrated annotations require an artwork or an image', path: ['annotations'],
+  }).refine((sketch) => !(sketch.artwork && sketch.image), {
+    error: 'A sketch is either the built-in artwork or an image, not both', path: ['image'],
+  }).refine((sketch) => !!sketch.artwork || !!sketch.image || (!!sketch.center && !!sketch.labels), {
+    error: 'A drawn diagram needs its centre and labels', path: ['labels'],
   }).optional(),
   state: z.enum(['active', 'maintained', 'paused', 'archived', 'experiment']),
   /** When the state above was last true. A register with no date is a claim. */

@@ -127,6 +127,20 @@ describe('the masthead and the mottos', () => {
   });
 });
 
+describe('a project illustration from the content repository', () => {
+  const picture = /<img[^>]*src="\/images\/test-author\/sketch\.svg"[^>]*>/;
+
+  it('shows on /projects/ with its handwritten notes', () => {
+    const html = read('projects/index.html');
+    expect(html).toMatch(picture);
+    expect(html).toContain('Заметка на полях');
+  });
+
+  it('shows beside the project featured on the homepage', () => {
+    expect(read('index.html')).toMatch(picture);
+  });
+});
+
 describe('the homepage greeting', () => {
   it('prints the intro under the motto, and keeps the bio at the end of articles', () => {
     const intro = read('index.html').match(/<p class="intro-text"[^>]*>([^<]*)<\/p>/)?.[1];

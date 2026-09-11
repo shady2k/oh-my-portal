@@ -10,6 +10,13 @@
       state: next
   since: 2026-02-01
   repo: https://github.com/example/live
+  sketch:
+    image: /images/test-author/sketch.svg
+    caption: Набросок живого проекта.
+    annotations:
+      - Заметка на полях
+      - Вторая пометка
+      - Третья пометка
 - slug: dead-thing
   name: Мёртвый проект
   summary: Проверяет, что архив уходит в конец.

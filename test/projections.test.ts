@@ -41,6 +41,19 @@ describe('illustrated project content', () => {
     expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, artwork: undefined } }).success).toBe(false);
     expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, annotations: ['One'] } }).success).toBe(false);
   });
+  it('takes a picture from the content images instead of the built-in artwork', () => {
+    const annotations = ['Первая пометка', 'Вторая пометка', 'Третья пометка'];
+    const sketch = { image: '/images/example/sketch.svg', caption: 'A drawing of the project.', annotations };
+    const parsed = projectSchema.parse({ ...data, sketch });
+    const md = projectsMarkdown([parsed], { experiment: 'experiment' });
+    expect(md).toContain(sketch.caption);
+    for (const annotation of annotations) expect(md).toContain(annotation);
+    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, image: 'https://cdn.example.com/sketch.svg' } }).success).toBe(false);
+    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, artwork: 'memory-study' } }).success).toBe(false);
+  });
+  it('still needs the centre and labels for a drawn diagram with no picture', () => {
+    expect(projectSchema.safeParse({ ...data, sketch: { caption: 'Nothing to draw.' } }).success).toBe(false);
+  });
 });
 
 const SITE = new URL('https://example.com/');
