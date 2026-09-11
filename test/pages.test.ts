@@ -127,6 +127,16 @@ describe('the masthead and the mottos', () => {
   });
 });
 
+describe('the homepage greeting', () => {
+  it('prints the intro under the motto, and keeps the bio at the end of articles', () => {
+    const intro = read('index.html').match(/<p class="intro-text"[^>]*>([^<]*)<\/p>/)?.[1];
+    expect(intro).toBe('Привет, это тестовое приветствие главной.');
+    const article = read('posts/published-example/index.html');
+    expect(article).toContain('Строка для проверки авторского блока.');
+    expect(article).not.toContain('тестовое приветствие');
+  });
+});
+
 describe('external links open in a new tab', () => {
   const article = () => read('posts/published-example/index.html');
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');

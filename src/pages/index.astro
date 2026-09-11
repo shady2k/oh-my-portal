@@ -39,7 +39,7 @@ const mottos = [author?.headline ?? 'Идеи, которые стали опы�
     <div class="intro-copy">
     <p class="field-label journal-name">Полевой журнал</p>
     <TypedHeadline text={mottos} />
-    {author?.bio && <p class="intro-text">{author.bio}</p>}
+    {(author?.intro ?? author?.bio) && <p class="intro-text">{author?.intro ?? author?.bio}</p>}
     </div>
     <a class="journal-jump" href="#journal">К свежим записям <span aria-hidden="true">↓</span></a>
   </header>

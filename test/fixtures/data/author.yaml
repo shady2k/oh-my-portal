@@ -5,6 +5,7 @@ headline:
   - Первый девиз журнала
   - Второй девиз журнала
 bio: Строка для проверки авторского блока.
+intro: Привет, это тестовое приветствие главной.
 avatar: /images/test-author/avatar.webp
 contact:
   label: почта

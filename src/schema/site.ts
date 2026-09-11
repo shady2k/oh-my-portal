@@ -50,6 +50,12 @@ export const author = z.strictObject({
   /** One or two sentences. Ends every article, at the moment of peak interest (R5). */
   bio: z.string().min(1).max(400),
   /**
+   * The homepage's own words under the motto, when they should differ from the
+   * bio. A greeting that welcomes a reader on arrival reads wrong at the end of
+   * an article, where the bio also appears; absent, the homepage prints the bio.
+   */
+  intro: z.string().min(1).max(300).optional(),
+  /**
    * A portrait, shown beside the name on /about/ and in the author block.
    *
    * A path into the content images rather than any URL: `check-outputs.ts`

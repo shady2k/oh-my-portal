@@ -95,6 +95,8 @@ try {
   assert.equal(before!.y, after!.y, 'typing preserves layout height');
   const headline = await page.locator('[data-typed-text]').textContent();
   assert.equal(headline, 'Собираю свою цифровую жизнь');
+  // The examples set no intro, so the homepage falls back to the bio.
+  assert.match((await page.locator('.intro-text').textContent()) ?? '', /Демонстрационный журнал/, 'homepage without intro shows the bio');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload({ waitUntil: 'networkidle' });
   assert.equal(await page.locator('[data-typed-text]').textContent(), headline);
