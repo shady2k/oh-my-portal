@@ -1,8 +1,8 @@
 ---
-import type { Project } from '../schema/site.ts';
+import type { ProjectFrontmatter } from '../schema/project.ts';
 import { Image } from 'astro:assets';
 import memoryStudy from '../assets/illustrations/memory-study.png';
-interface Props { sketch: NonNullable<Project['sketch']>; compact?: boolean; }
+interface Props { sketch: NonNullable<ProjectFrontmatter['sketch']>; compact?: boolean; }
 const { sketch, compact = false } = Astro.props;
 /*
  * A drawing is either the engine's own plate or a picture from the content

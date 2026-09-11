@@ -1,6 +1,6 @@
 ---
-import type { Project } from '../schema/site.ts';
-interface Props { stages: NonNullable<Project['stages']>; }
+import type { ProjectFrontmatter } from '../schema/project.ts';
+interface Props { stages: NonNullable<ProjectFrontmatter['stages']>; }
 const { stages } = Astro.props;
 const stateLabels = { done: 'завершено', current: 'текущий этап', next: 'впереди' };
 ---

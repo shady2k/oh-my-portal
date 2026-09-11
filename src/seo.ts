@@ -160,6 +160,9 @@ function breadcrumb(canonical: URL, title: string): { name: string; path: string
       ? [home, journal, article, { name: 'Провенанс', path }]
       : [home, journal, article];
   }
+  if (path.startsWith('/projects/') && path !== '/projects/') {
+    return [home, { name: 'Проекты', path: '/projects/' }, { name: title, path }];
+  }
   if (path.startsWith('/tag/')) return [home, journal, { name: title, path }];
   if (path === '/') return [home];
   return [home, { name: title, path }];
@@ -180,12 +183,13 @@ function breadcrumb(canonical: URL, title: string): { name: string; path: string
  * and then submitting the address is a contradiction a crawler resolves against
  * the site.
  */
-export function sitemapPaths(slugs: string[], tags: string[]): string[] {
+export function sitemapPaths(slugs: string[], tags: string[], projects: string[] = []): string[] {
   return [
     '/',
     '/archive/',
     '/about/',
     '/projects/',
+    ...projects.map((slug) => `/projects/${slug}/`),
     ...slugs.map((slug) => `/posts/${slug}/`),
     ...tags.map((tag) => `/tag/${tag}/`),
   ];

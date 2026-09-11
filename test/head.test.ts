@@ -110,6 +110,13 @@ describe('the head of a built page', () => {
       expect(jsonLd(page(path)).map((block) => block['@type'])).toContain('BreadcrumbList');
     }
   });
+
+  it('titles a project page with the project, and hangs it off the register', () => {
+    const html = page('projects/live-thing');
+    expect(title(html)).toBe('Живой проект — Тестовый Журнал');
+    const trail = jsonLd(html).find((block) => block['@type'] === 'BreadcrumbList') as { itemListElement: { name: string }[] };
+    expect(trail.itemListElement.map((crumb) => crumb.name)).toEqual(['Главная', 'Проекты', 'Живой проект']);
+  });
 });
 
 describe('what a crawler is told', () => {

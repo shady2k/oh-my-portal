@@ -9,7 +9,9 @@ import JournalSketch from '../components/JournalSketch.astro';
 import Revision from '../components/Revision.astro';
 import PencilRule from '../components/PencilRule.astro';
 import Base from '../layouts/Base.astro';
-import { getAuthor, listProjects, STATE_LABEL } from '../site.ts';
+import { getAuthor } from '../site.ts';
+import { listProjects, STATE_LABEL } from '../projects.ts';
+import { projectPath } from '../projections.ts';
 import { siteName } from '../seo.ts';
 import { displayHeading } from '../typography.ts';
 import { listPosts, listTags } from '../posts.ts';
@@ -18,9 +20,9 @@ const posts = await listPosts();
 const tags = await listTags();
 const author = await getAuthor();
 const projects = await listProjects();
-const project = projects.find((p) => p.featured) ?? projects.find((p) => p.state === 'active' || p.state === 'experiment');
-const currentStage = project?.stages?.find((stage) => stage.state === 'current');
-const hasArt = !!project?.sketch;
+const project = projects.find((p) => p.data.featured) ?? projects.find((p) => p.data.state === 'active' || p.data.state === 'experiment');
+const currentStage = project?.data.stages?.find((stage) => stage.state === 'current');
+const hasArt = !!project?.data.sketch;
 const latest = posts[0];
 const being = posts.find((p) => p.data.author === 'being');
 const changed = posts.flatMap((post) => (post.data.revisions ?? []).map((revision) => ({ post, revision })))
@@ -49,25 +51,30 @@ const mottos = [author?.headline ?? 'Идеи, которые стали опы�
       <div class="feature-rule"><PencilRule /></div>
       <div class="feature-copy">
         <p class="field-label feature-heading">
-          {project ? 'Открытый эксперимент' : 'Последняя запись'}{project && <>, {currentStage
+          {project ? 'Открытый эксперимент' : 'Последняя запись'}{project && <>, {currentStage?.post
             ? <>этап: <a href={`/posts/${currentStage.post}/`}>{currentStage.title}</a></>
-            : STATE_LABEL[project.state].toLowerCase()}</>}
+            : currentStage ? <>этап: {currentStage.title}</> : STATE_LABEL[project.data.state].toLowerCase()}</>}
         </p>
-        <h2 id="feature-title"><a href={project ? `/projects/#${project.slug}` : `/posts/${latest!.id}/`}>{project?.name ?? latest!.data.title}</a></h2>
-        <p class="feature-summary">{project?.summary ?? latest!.data.summary}</p>
+        <h2 id="feature-title"><a href={project ? projectPath(project) : `/posts/${latest!.id}/`}>{project?.data.title ?? latest!.data.title}</a></h2>
+        <p class="feature-summary">{project?.data.summary ?? latest!.data.summary}</p>
         {!project && <p class="feature-meta utility">
             <time datetime={iso(latest!.data.date)}>{displayDate(latest!.data.date)}</time>
             {latest!.data.status === 'draft' && <span>черновик</span>}
         </p>}
-        {project?.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.observation}</EditorialNote></div>}
-        <a class="read-link" href={project ? `/projects/#${project.slug}` : `/posts/${latest!.id}/`}>{project ? 'Как идёт эксперимент' : 'Читать запись'}</a>
+        {project?.data.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.data.observation}</EditorialNote></div>}
+        <a class="read-link" href={project ? projectPath(project) : `/posts/${latest!.id}/`}>{project ? 'Как идёт эксперимент' : 'Читать запись'}</a>
       </div>
       {project && hasArt && (
         <aside class="feature-art ui-editorial-aside">
-          <ExperimentSketch sketch={project.sketch!} compact />
+          <ExperimentSketch sketch={project.data.sketch!} compact />
         </aside>
       )}
-      {project?.question && <p class="feature-question">{project.question}</p>}
+      {project?.data.question && (
+        <div class="feature-question">
+          <p class="field-label">Открытый вопрос</p>
+          <p class="question-text">{project.data.question}</p>
+        </div>
+      )}
     </section>
   )}
 
@@ -128,11 +135,13 @@ const mottos = [author?.headline ?? 'Идеи, которые стали опы�
   .read-link { display: inline-block; font-size: 1rem; margin-block-start: 0.5rem; }
   .feature-art { min-inline-size: 0; }
   /*
-   * The project's open question closes the experiment block without a label:
-   * a question mark and italics say what it is. It is the one italic on the
-   * page, which is what lets it read as the author thinking aloud.
+   * The project's open question closes the experiment block across its full
+   * width, in the page's one italic. It carries a quiet label: without one a
+   * reader took it for a stray sentence (2026-09-11).
    */
-  .feature-question { grid-column: 1 / -1; max-inline-size: 42rem; margin: 0; font-style: italic; font-size: clamp(1.25rem, 1.7vw, 1.5rem); line-height: 1.3; letter-spacing: -0.015em; }
+  .feature-question { grid-column: 1 / -1; max-inline-size: 42rem; }
+  .feature-question .field-label { margin: 0 0 0.375rem; }
+  .question-text { margin: 0; font-style: italic; font-size: clamp(1.25rem, 1.7vw, 1.5rem); line-height: 1.3; letter-spacing: -0.015em; }
   #journal { min-inline-size: 0; }
   .journal-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1rem; padding-block: 0.75rem 0.625rem; }
   .journal-head h2 { margin: 0; font-family: var(--face-prose); font-size: 1.25rem; font-weight: 600; color: var(--ink); }

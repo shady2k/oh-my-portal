@@ -168,4 +168,10 @@ describe('structured data elsewhere', () => {
       'https://journal.example.test/posts/x/integrity/',
     ]);
   });
+
+  it('hangs a project page off the register', () => {
+    const blocks = structuredData({ ...page, title: 'Проект', canonical: at('/projects/x/') });
+    const trail = blocks.find((block) => block['@type'] === 'BreadcrumbList');
+    expect((trail!.itemListElement as { name: string }[]).map((crumb) => crumb.name)).toEqual(['Главная', 'Проекты', 'Проект']);
+  });
 });

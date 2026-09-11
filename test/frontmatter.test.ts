@@ -135,3 +135,10 @@ describe('the article core', () => {
     rejects({ recipe: { ...recipe, steps: [{ id: 'install', cmd: 'x', warning: 'y' }] } });
   });
 });
+
+describe('the project an entry belongs to', () => {
+  it('is optional, and a slug when present', () => {
+    expect(parse({ project: 'some-project' }).success).toBe(true);
+    rejects({ project: 'Some Project' });
+  });
+});

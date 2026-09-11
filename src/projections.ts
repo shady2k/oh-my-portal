@@ -1,7 +1,14 @@
 import { stringify as toYaml } from 'yaml';
 
 import type { Post } from './posts.ts';
-import type { Project } from './schema/site.ts';
+import type { ProjectFrontmatter } from './schema/project.ts';
+
+/** Shaped like a loaded project entry; only what the projections read. */
+export interface ProjectEntry {
+  id: string;
+  body?: string;
+  data: ProjectFrontmatter;
+}
 
 /**
  * The projections — design §6.
@@ -18,6 +25,9 @@ import type { Project } from './schema/site.ts';
 
 /** `/posts/<slug>/` — the address both versions answer at. */
 export const postPath = (post: Post) => `/posts/${post.id}/`;
+
+/** `/projects/<slug>/` — the project page and its markdown twin. */
+export const projectPath = (project: { id: string }) => `/projects/${project.id}/`;
 
 const absolute = (site: URL, path: string) => new URL(path, site).href;
 
@@ -44,6 +54,7 @@ export function articleMarkdown(post: Post, site: URL): string {
     lang: data.lang,
     summary: data.summary,
     tags: data.tags,
+    ...(data.project ? { project: absolute(site, projectPath({ id: data.project })) } : {}),
     ...(data.tools ? { tools: data.tools } : {}),
     ...(data.sources ? { sources: data.sources } : {}),
     ...(data.related ? { related: data.related.map((s) => absolute(site, `/posts/${s}/`)) } : {}),
@@ -72,6 +83,7 @@ export function articleJson(post: Post, site: URL) {
     lang: data.lang,
     summary: data.summary,
     tags: data.tags,
+    ...(data.project ? { project: absolute(site, projectPath({ id: data.project })) } : {}),
     ...(data.tools ? { tools: data.tools } : {}),
     ...(data.sources ? { sources: data.sources } : {}),
     ...(data.related ? { related: data.related.map((s) => absolute(site, `/posts/${s}/`)) } : {}),
@@ -96,6 +108,7 @@ export function indexJson(posts: Post[], site: URL) {
       author: post.data.author,
       summary: post.data.summary,
       tags: post.data.tags,
+      ...(post.data.project ? { project: absolute(site, projectPath({ id: post.data.project })) } : {}),
       /* Whether there is a structured core, so an agent can skip the essays. */
       has_recipe: Boolean(post.data.recipe),
     })),
@@ -119,7 +132,7 @@ export function catalogueMarkdown(posts: Post[], site: URL): string {
 }
 
 /** `/llms.txt` — the site map. Cheap, and it is what the Link header advertises. */
-export function llmsTxt(posts: Post[], site: URL, tags: string[] = []): string {
+export function llmsTxt(posts: Post[], site: URL, tags: string[] = [], projects: ProjectEntry[] = [], label: Record<string, string> = {}): string {
   const lines = [
     '# Записи',
     '',
@@ -135,6 +148,14 @@ export function llmsTxt(posts: Post[], site: URL, tags: string[] = []): string {
     lines.push(
       `- [${post.data.title}](${absolute(site, `/posts/${post.id}.md`)}): ${post.data.summary}`,
     );
+  }
+  if (projects.length) {
+    lines.push('', '## Проекты', '');
+    for (const project of projects) {
+      lines.push(
+        `- [${project.data.title}](${absolute(site, `/projects/${project.id}.md`)}): ${label[project.data.state] ?? project.data.state} — ${project.data.summary}`,
+      );
+    }
   }
   lines.push('', '## Прочее', '');
   lines.push(`- [Каталог JSON](${absolute(site, '/index.json')}): все записи с метаданными`);
@@ -184,27 +205,59 @@ export function aboutMarkdown(
  * agent summarising someone's work should be able to say a project is archived
  * rather than inferring liveness from a commit date.
  */
-export function projectsMarkdown(
-  projects: { name: string; slug: string; summary: string; state: string; since?: Date; repo?: string; site?: string; question?: string; sketch?: { caption: string; annotations?: string[] }; stages?: Project['stages']; observation?: string }[],
-  label: Record<string, string>,
-  body?: string,
-): string {
+export function projectsMarkdown(projects: ProjectEntry[], label: Record<string, string>, site: URL, body?: string): string {
   const lines = ['# Проекты', ''];
   if (body) lines.push(body.trim(), '');
   for (const project of projects) {
-    lines.push(`## ${project.name}`, '');
-    lines.push(project.summary, '');
-    if (project.question) lines.push(`Открытый вопрос: ${project.question}`, '');
-    if (project.sketch) lines.push(project.sketch.caption, '');
-    if (project.sketch?.annotations) lines.push(`Пометки к рисунку: ${project.sketch.annotations.join('; ')}.`, '');
-    if (project.observation) lines.push(`Наблюдение: ${project.observation}`, '');
-    for (const stage of project.stages ?? []) {
+    const { data } = project;
+    lines.push(`## [${data.title}](${absolute(site, projectPath(project))})`, '');
+    lines.push(data.summary, '');
+    if (data.question) lines.push(`Открытый вопрос: ${data.question}`, '');
+    if (data.sketch) lines.push(data.sketch.caption, '');
+    if (data.sketch?.annotations) lines.push(`Пометки к рисунку: ${data.sketch.annotations.join('; ')}.`, '');
+    if (data.observation) lines.push(`Наблюдение: ${data.observation}`, '');
+    for (const stage of data.stages ?? []) {
       lines.push(`- ${stage.title} (${stage.state})${stage.post ? `: /posts/${stage.post}/` : ''}`);
     }
-    lines.push(`- состояние: ${label[project.state] ?? project.state} (\`${project.state}\`)`);
-    if (project.since) lines.push(`- с: ${iso(project.since)}`);
-    if (project.repo) lines.push(`- исходники: ${project.repo}`);
-    if (project.site) lines.push(`- сайт: ${project.site}`);
+    lines.push(`- состояние: ${label[data.state] ?? data.state} (\`${data.state}\`)`);
+    if (data.since) lines.push(`- с: ${iso(data.since)}`);
+    if (data.repo) lines.push(`- исходники: ${data.repo}`);
+    if (data.site) lines.push(`- сайт: ${data.site}`);
+    lines.push(`- markdown: ${absolute(site, `/projects/${project.id}.md`)}`);
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+/**
+ * `/projects/<slug>.md` — the project page for a client that wants markdown:
+ * the register's facts, the body as authored, and what was written about it.
+ */
+export function projectMarkdown(project: ProjectEntry, posts: Post[], site: URL, label: Record<string, string>): string {
+  const { data } = project;
+  const lines = [`# ${data.title}`, '', data.summary, ''];
+  lines.push(`- состояние: ${label[data.state] ?? data.state} (\`${data.state}\`)`);
+  if (data.since) lines.push(`- с: ${iso(data.since)}`);
+  if (data.repo) lines.push(`- исходники: ${data.repo}`);
+  if (data.site) lines.push(`- сайт: ${data.site}`);
+  lines.push(`- адрес: ${absolute(site, projectPath(project))}`, '');
+  if (data.stages) {
+    lines.push('## Этапы', '');
+    for (const stage of data.stages) {
+      lines.push(`- ${stage.title} (${stage.state})${stage.post ? `: ${absolute(site, `/posts/${stage.post}/`)}` : ''}`);
+    }
+    lines.push('');
+  }
+  if (data.observation) lines.push(`Наблюдение: ${data.observation}`, '');
+  if (data.question) lines.push(`Открытый вопрос: ${data.question}`, '');
+  if (data.sketch) lines.push(data.sketch.caption, '');
+  if (data.sketch?.annotations) lines.push(`Пометки к рисунку: ${data.sketch.annotations.join('; ')}.`, '');
+  if (project.body?.trim()) lines.push(project.body.trim(), '');
+  if (posts.length) {
+    lines.push('## Записи о проекте', '');
+    for (const post of posts) {
+      lines.push(`- [${post.data.title}](${absolute(site, `/posts/${post.id}.md`)}): ${post.data.summary}`);
+    }
     lines.push('');
   }
   return lines.join('\n');

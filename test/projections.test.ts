@@ -7,56 +7,41 @@ import {
   catalogueMarkdown,
   indexJson,
   llmsTxt,
+  projectMarkdown,
   projectsMarkdown,
 } from '../src/projections.ts';
-import { project as projectSchema } from '../src/schema/site.ts';
+import { project as projectSchema } from '../src/schema/project.ts';
 
-describe('illustrated project content', () => {
-  it('requires evidence for active stages and rejects two current stages', () => {
-    const base = { slug: 'example', name: 'Example', summary: 'Synthetic', state: 'active' };
-    expect(projectSchema.safeParse({ ...base, stages: [{ title: 'Done', state: 'done' }, { title: 'Next', state: 'next' }] }).success).toBe(false);
-    expect(projectSchema.safeParse({ ...base, stages: ['One', 'Two'].map((title) => ({ title, state: 'current', post: 'example' })) }).success).toBe(false);
-  });
+const SITE = new URL('https://example.com/');
+
+describe('the register in markdown', () => {
   const data = {
-    slug: 'example', name: 'Example', summary: 'Synthetic experiment', state: 'experiment',
-    question: 'What changes?',
+    title: 'Example', slug: 'example', status: 'published', lang: 'ru',
+    summary: 'Synthetic experiment', state: 'experiment', question: 'What changes?',
     sketch: { center: 'agent', labels: ['memory', 'experience', 'initiative', 'character'], caption: 'Four influences on the agent.' },
   };
-  it('keeps the diagram explanation and open question in the machine version', () => {
-    const parsed = projectSchema.parse(data);
-    const md = projectsMarkdown([parsed], { experiment: 'experiment' });
+  const entry = (patch: Record<string, unknown> = {}) => ({ id: 'example', data: projectSchema.parse({ ...data, ...patch }) });
+
+  it('keeps the diagram explanation and the open question', () => {
+    const md = projectsMarkdown([entry()], { experiment: 'experiment' }, SITE);
     expect(md).toContain(data.question);
     expect(md).toContain(data.sketch.caption);
   });
-  it('rejects incomplete or oversized labels that cannot fit the sketch', () => {
-    expect(projectSchema.safeParse({ ...data, sketch: { ...data.sketch, labels: ['one'] } }).success).toBe(false);
-    expect(projectSchema.safeParse({ ...data, sketch: { ...data.sketch, center: 'x'.repeat(19) } }).success).toBe(false);
-  });
-  it('keeps pencil annotations in Markdown and requires their matching artwork', () => {
+
+  it('keeps the pencil annotations of the built-in artwork', () => {
     const annotations = ['Facts survived', 'Still testing', 'Context breaks here'];
-    const sketch = { ...data.sketch, artwork: 'memory-study', annotations };
-    const parsed = projectSchema.parse({ ...data, sketch });
-    const md = projectsMarkdown([parsed], { experiment: 'experiment' });
+    const md = projectsMarkdown([entry({ sketch: { ...data.sketch, artwork: 'memory-study', annotations } })], { experiment: 'experiment' }, SITE);
     for (const annotation of annotations) expect(md).toContain(annotation);
-    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, artwork: undefined } }).success).toBe(false);
-    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, annotations: ['One'] } }).success).toBe(false);
   });
-  it('takes a picture from the content images instead of the built-in artwork', () => {
+
+  it('keeps the caption and notes of a picture from the content images', () => {
     const annotations = ['Первая пометка', 'Вторая пометка', 'Третья пометка'];
     const sketch = { image: '/images/example/sketch.svg', caption: 'A drawing of the project.', annotations };
-    const parsed = projectSchema.parse({ ...data, sketch });
-    const md = projectsMarkdown([parsed], { experiment: 'experiment' });
+    const md = projectsMarkdown([entry({ sketch })], { experiment: 'experiment' }, SITE);
     expect(md).toContain(sketch.caption);
     for (const annotation of annotations) expect(md).toContain(annotation);
-    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, image: 'https://cdn.example.com/sketch.svg' } }).success).toBe(false);
-    expect(projectSchema.safeParse({ ...data, sketch: { ...sketch, artwork: 'memory-study' } }).success).toBe(false);
-  });
-  it('still needs the centre and labels for a drawn diagram with no picture', () => {
-    expect(projectSchema.safeParse({ ...data, sketch: { caption: 'Nothing to draw.' } }).success).toBe(false);
   });
 });
-
-const SITE = new URL('https://example.com/');
 
 /** Shaped like a loaded collection entry; only the fields the projections read. */
 const post = {
@@ -194,5 +179,68 @@ describe('the markdown catalogue', () => {
     const md = catalogueMarkdown([post, essay], SITE);
     expect(md).toContain('Одно предложение.');
     expect(md).not.toContain('Тело статьи');
+  });
+});
+
+describe('a project page in markdown', () => {
+  const entry = {
+    id: 'example',
+    body: '## Как устроено\n\nТекст страницы.\n',
+    data: projectSchema.parse({
+      title: 'Example', slug: 'example', status: 'published', lang: 'ru', state: 'active',
+      summary: 'Synthetic.', stages: [{ title: 'Prototype', state: 'done', post: 'reverse-proxy-behind-wireguard' }, { title: 'Next', state: 'next' }],
+      repo: 'https://github.com/example/example',
+    }),
+  };
+  const md = projectMarkdown(entry, [post], SITE, { active: 'в работе' });
+
+  it('leads with the project and its state', () => {
+    expect(md.startsWith('# Example\n\nSynthetic.\n')).toBe(true);
+    expect(md).toContain('- состояние: в работе (`active`)');
+    expect(md).toContain('- адрес: https://example.com/projects/example/');
+  });
+
+  it('lists the stages with absolute addresses', () => {
+    expect(md).toContain('- Prototype (done): https://example.com/posts/reverse-proxy-behind-wireguard/');
+    expect(md).toContain('- Next (next)');
+  });
+
+  it('carries the body as authored, and the posts about the project', () => {
+    expect(md).toContain('## Как устроено\n\nТекст страницы.');
+    expect(md).toContain('## Записи о проекте');
+    expect(md).toContain('- [Обратный прокси за WireGuard](https://example.com/posts/reverse-proxy-behind-wireguard.md): Одно предложение.');
+  });
+});
+
+describe('a post that belongs to a project', () => {
+  const base = post as unknown as { id: string; body: string; data: Record<string, unknown> };
+  const member = { ...base, data: { ...base.data, project: 'some-project' } } as never;
+  const url = 'https://example.com/projects/some-project/';
+
+  it('names it by address in both twins and in the catalogue', () => {
+    expect(parseYaml(articleMarkdown(member, SITE).split('---')[1]!).project).toBe(url);
+    expect(articleJson(member, SITE).project).toBe(url);
+    expect(indexJson([member], SITE).posts[0]!.project).toBe(url);
+  });
+
+  it('leaves the field out for a post that belongs to none', () => {
+    expect(articleJson(essay, SITE)).not.toHaveProperty('project');
+  });
+});
+
+describe('/llms.txt and the projects', () => {
+  const project = {
+    id: 'example',
+    data: projectSchema.parse({ title: 'Example', slug: 'example', status: 'published', lang: 'ru', state: 'active', summary: 'Synthetic.' }),
+  };
+
+  it('lists each project at its markdown address with its state', () => {
+    const txt = llmsTxt([post], SITE, [], [project], { active: 'в работе' });
+    expect(txt).toContain('## Проекты');
+    expect(txt).toContain('- [Example](https://example.com/projects/example.md): в работе — Synthetic.');
+  });
+
+  it('has no projects section when there are none', () => {
+    expect(llmsTxt([post], SITE)).not.toContain('## Проекты');
   });
 });

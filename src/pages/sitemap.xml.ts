@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro';
 
 import { listPosts, listTags } from '../posts.ts';
+import { listProjects } from '../projects.ts';
 import { sitemapPaths } from '../seo.ts';
 
 /**
@@ -25,6 +26,7 @@ import { sitemapPaths } from '../seo.ts';
 export async function GET({ site }: APIContext) {
   const posts = await listPosts();
   const tags = (await listTags()).map(({ tag }) => tag);
+  const projects = (await listProjects()).map((project) => project.id);
 
   const changed = new Map(
     posts.map((post) => [`/posts/${post.id}/`, (post.data.updated ?? post.data.date).toISOString()]),
@@ -33,6 +35,7 @@ export async function GET({ site }: APIContext) {
   const entries = sitemapPaths(
     posts.map((post) => post.id),
     tags,
+    projects,
   ).map((path) => {
     const url = new URL(path, site!).href;
     const lastmod = changed.get(path);

@@ -9,6 +9,7 @@ summary: "После сброса контекста агент повторил
 tags: [ai-agents]
 lang: ru
 related: [agent-memory-experiment]
+project: example-engine
 ---
 
 > Синтетический результат вымышленного эксперимента. Это пример оформления, а не измерение реальной модели.

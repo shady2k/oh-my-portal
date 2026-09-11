@@ -1,0 +1,77 @@
+---
+import { render } from 'astro:content';
+
+import Base from '../../../layouts/Base.astro';
+import EditorialNote from '../../../components/ui/EditorialNote.astro';
+import ExperimentSketch from '../../../components/ExperimentSketch.astro';
+import ExperimentTrail from '../../../components/ExperimentTrail.astro';
+import Listing from '../../../components/Listing.astro';
+import { displayDate } from '../../../dates.ts';
+import { linkAttrs } from '../../../links.ts';
+import { listProjects, postsOf, STATE_LABEL, type Project } from '../../../projects.ts';
+
+/**
+ * `/projects/<slug>/` — project-pages design §4.1.
+ *
+ * The head repeats the homepage feature's composition, so arriving from the
+ * feature feels like opening it rather than landing somewhere else. Below it
+ * comes what the feature had no room for: every stage, the author's own text,
+ * and what was written about the project.
+ */
+export async function getStaticPaths() {
+  return (await listProjects()).map((project) => ({ params: { slug: project.id }, props: { project } }));
+}
+
+const { project } = Astro.props as { project: Project };
+const { data } = project;
+const { Content } = await render(project);
+const posts = await postsOf(project);
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base title={data.title} description={data.summary} lang={data.lang} noindex={data.status === 'draft'}>
+  <article class="project-page" data-pagefind-body>
+    <header class:list={['project-head', 'ui-editorial', { 'has-art': !!data.sketch }]}>
+      <div class="project-copy">
+        <p class="project-meta utility" data-pagefind-ignore>
+          <span>{STATE_LABEL[data.state]}</span>
+          {data.since && <time datetime={iso(data.since)}>с {displayDate(data.since)}</time>}
+          {data.status === 'draft' && <span>черновик</span>}
+        </p>
+        <h1>{data.title}</h1>
+        <p class="summary ui-reading">{data.summary}</p>
+        {(data.repo || data.site) && <p class="links" data-pagefind-ignore>
+          {data.repo && <a href={data.repo} {...linkAttrs(data.repo, Astro.site)}>Исходники</a>}
+          {data.site && <a href={data.site} {...linkAttrs(data.site, Astro.site)}>Сайт проекта</a>}
+        </p>}
+      </div>
+      {data.sketch && <aside class="ui-editorial-aside"><ExperimentSketch sketch={data.sketch} /></aside>}
+    </header>
+
+    {data.stages && <ExperimentTrail stages={data.stages} />}
+    {data.observation && <div class="note"><EditorialNote label="Последнее наблюдение" accent>{data.observation}</EditorialNote></div>}
+    {data.question && <div class="note"><EditorialNote label="Открытый вопрос">{data.question}</EditorialNote></div>}
+
+    {project.body?.trim() && <div class="prose ui-reading body"><Content /></div>}
+
+    {posts.length > 0 && (
+      <section class="project-posts" aria-labelledby="project-posts-title" data-pagefind-ignore>
+        <h2 id="project-posts-title" class="field-label">Записи о проекте</h2>
+        <Listing posts={posts} compact showSummary />
+      </section>
+    )}
+  </article>
+</Base>
+
+<style>
+  .project-head { padding-block: var(--space-4) var(--space-3); }
+  .project-copy { min-inline-size: 0; }
+  .project-meta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); margin: 0 0 1rem; }
+  h1 { font-size: var(--title-feature); line-height: 1.12; letter-spacing: -0.04em; max-inline-size: 22ch; margin: 0 0 1rem; }
+  .summary { color: var(--ink-quiet); font-size: 1.125rem; line-height: 1.55; margin: 0; }
+  .links { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-3) 0 0; }
+  .note { max-inline-size: var(--measure); margin-block: var(--space-3); }
+  .body { margin-block: var(--space-4); }
+  .project-posts { margin-block-start: var(--space-5); }
+  .project-posts h2 { margin: 0 0 var(--space-2); font-family: var(--face-prose); font-size: 1.25rem; font-weight: 600; color: var(--ink); }
+</style>

@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -294,5 +294,66 @@ describe('the feeds are well-formed RSS, not just files', () => {
 
   it('declares its language, so a reader knows what it is subscribing to', () => {
     expect(channel('rss/index.xml').language).toBe('ru');
+  });
+});
+
+describe('a page for each project', () => {
+  const page = () => read('projects/live-thing/index.html');
+
+  it('shows the project, its stages, its own text and the posts about it', () => {
+    const html = page();
+    for (const text of ['Живой проект', 'в работе', 'Проверяет активное состояние.', 'История эксперимента', 'Тело страницы живого проекта.', 'Записи о проекте', 'Исходники']) {
+      expect(html, text).toContain(text);
+    }
+    expect(html).toContain('href="/posts/published-example/"');
+    expect(html).toMatch(/<img[^>]*src="\/images\/test-author\/sketch\.svg"/);
+  });
+
+  it('leaves the posts block out when nothing is written about the project', () => {
+    expect(read('projects/dead-thing/index.html')).not.toContain('Записи о проекте');
+  });
+
+  it('has both markdown twins, the same bytes, with the body and the posts', () => {
+    const md = read('projects/live-thing/index.md');
+    expect(read('projects/live-thing.md')).toBe(md);
+    expect(md).toMatch(/^# Живой проект/);
+    expect(md).toContain('`active`');
+    expect(md).toContain('Тело страницы живого проекта.');
+    expect(md).toContain('https://journal.example.test/posts/published-example.md');
+  });
+
+  it('builds no page for a draft project', () => {
+    expect(existsSync(join(OUT, 'projects/draft-thing/index.html'))).toBe(false);
+  });
+});
+
+describe('a project and what points at it', () => {
+  it('links each card on /projects/ to its page, keeping the anchor', () => {
+    const html = read('projects/index.html');
+    expect(html).toMatch(/<h2[^>]*><a[^>]*href="\/projects\/live-thing\/"[^>]*>Живой проект<\/a><\/h2>/);
+    expect(html).toMatch(/<a[^>]*href="\/projects\/live-thing\/"[^>]*>Страница проекта<\/a>/);
+    expect(html).toContain('id="live-thing"');
+  });
+
+  it('sends the homepage feature to the project page and labels its question', () => {
+    const feature = read('index.html').match(/<section[^>]*class="[^"]*\bfeature\b[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(feature).toContain('href="/projects/live-thing/"');
+    expect(feature).not.toContain('/projects/#');
+    expect(feature).toContain('Открытый вопрос');
+    expect(feature).toContain('Что проверяет живой проект?');
+  });
+
+  it('links a post back to its project', () => {
+    expect(read('posts/published-example/index.html')).toMatch(/проект: <a[^>]*href="\/projects\/live-thing\/"[^>]*>Живой проект<\/a>/);
+  });
+
+  it('carries the project into the machine versions', () => {
+    const url = 'https://journal.example.test/projects/live-thing/';
+    expect(read('posts/published-example.md')).toContain(`project: ${url}`);
+    expect(JSON.parse(read('posts/published-example.json')).project).toBe(url);
+    expect(JSON.parse(read('index.json')).posts.find((p: { slug: string }) => p.slug === 'published-example').project).toBe(url);
+    expect(read('llms.txt')).toContain('## Проекты');
+    expect(read('llms.txt')).toContain('https://journal.example.test/projects/live-thing.md');
+    expect(read('projects/index.md')).toContain(`## [Живой проект](${url})`);
   });
 });

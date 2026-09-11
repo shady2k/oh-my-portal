@@ -9,7 +9,8 @@ import ExperimentTrail from '../../components/ExperimentTrail.astro';
 import { displayDate } from '../../dates.ts';
 import { linkAttrs } from '../../links.ts';
 import { getPage } from '../../posts.ts';
-import { listProjects, STATE_LABEL } from '../../site.ts';
+import { listProjects, STATE_LABEL } from '../../projects.ts';
+import { projectPath } from '../../projections.ts';
 
 /**
  * `/projects/` — R8, and §12's "a register with the state of each project, not
@@ -37,27 +38,28 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
     <ul class="register">
       {
-        projects.map((project) => (
-          <li id={project.slug}>
-            <div class:list={['ui-editorial', { 'has-art': !!project.sketch }]}>
+        projects.map(({ id, data }) => (
+          <li id={id}>
+            <div class:list={['ui-editorial', { 'has-art': !!data.sketch }]}>
               <div>
                 <div class="project-meta utility">
-                  <span class={`state state-${project.state}`}>{STATE_LABEL[project.state]}</span>
-                  {project.since && <time datetime={iso(project.since)}>с {displayDate(project.since)}</time>}
+                  <span class={`state state-${data.state}`}>{STATE_LABEL[data.state]}</span>
+                  {data.since && <time datetime={iso(data.since)}>с {displayDate(data.since)}</time>}
                 </div>
-                <h2>{project.name}</h2>
-                <p class="summary ui-reading">{project.summary}</p>
-                {project.stages && <ExperimentTrail stages={project.stages} />}
-                {project.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.observation}</EditorialNote></div>}
-                {!project.sketch && project.question && <div class="question"><EditorialNote label="Открытый вопрос">{project.question}</EditorialNote></div>}
-                {(project.repo || project.site) && <p class="links" data-pagefind-ignore>
-                  {project.repo && <a href={project.repo} {...linkAttrs(project.repo, Astro.site)}>Исходники</a>}
-                  {project.site && <a href={project.site} {...linkAttrs(project.site, Astro.site)}>Сайт проекта</a>}
-                </p>}
+                <h2><a href={projectPath({ id })}>{data.title}</a></h2>
+                <p class="summary ui-reading">{data.summary}</p>
+                {data.stages && <ExperimentTrail stages={data.stages} />}
+                {data.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{data.observation}</EditorialNote></div>}
+                {!data.sketch && data.question && <div class="question"><EditorialNote label="Открытый вопрос">{data.question}</EditorialNote></div>}
+                <p class="links" data-pagefind-ignore>
+                  <a href={projectPath({ id })}>Страница проекта</a>
+                  {data.repo && <a href={data.repo} {...linkAttrs(data.repo, Astro.site)}>Исходники</a>}
+                  {data.site && <a href={data.site} {...linkAttrs(data.site, Astro.site)}>Сайт проекта</a>}
+                </p>
               </div>
-              {project.sketch && <aside class="ui-editorial-aside">
-                <ExperimentSketch sketch={project.sketch} compact />
-                {project.question && <div class="question"><EditorialNote label="Открытый вопрос">{project.question}</EditorialNote></div>}
+              {data.sketch && <aside class="ui-editorial-aside">
+                <ExperimentSketch sketch={data.sketch} compact />
+                {data.question && <div class="question"><EditorialNote label="Открытый вопрос">{data.question}</EditorialNote></div>}
               </aside>}
             </div>
           </li>
@@ -74,6 +76,8 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .register > li + li { margin-block-start: var(--space-4); padding-block-start: var(--space-4); border-block-start: 1px solid var(--rule); }
   .project-meta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); margin-block-end: 1rem; }
   h2 { font-size: var(--title-feature); max-inline-size: 22ch; margin: 0 0 1rem; }
+  h2 a { text-decoration: none; }
+  h2 a:hover, h2 a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; }
   .ui-editorial:not(.has-art) h2 { font-size: var(--step-2); max-inline-size: var(--measure); }
   .state { color: var(--ink); }
   .state-archived { color: var(--ink-quiet); }

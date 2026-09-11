@@ -9,7 +9,8 @@ import Tag from '../components/Tag.astro';
 import { twinHash } from '../history.ts';
 import { linkAttrs } from '../links.ts';
 import { listPosts } from '../posts.ts';
-import { articleMarkdown } from '../projections.ts';
+import { articleMarkdown, projectPath } from '../projections.ts';
+import { listProjects } from '../projects.ts';
 import Base from './Base.astro';
 import { displayDate } from '../dates.ts';
 import Revision from '../components/Revision.astro';
@@ -34,6 +35,10 @@ const all = await listPosts();
 const at = all.findIndex((entry) => entry.id === post.id);
 const newer = at > 0 ? all[at - 1] : undefined;
 const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
+
+/* The project this post names. listProjects() has already refused a name that
+   is not a published project, so a missing match cannot happen in a build. */
+const project = data.project ? (await listProjects()).find((entry) => entry.id === data.project) : undefined;
 ---
 
 <Base
@@ -83,12 +88,13 @@ const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
       <h1><span data-pagefind-meta="title">{data.title}</span></h1>
       <p class="standfirst">{data.summary}</p>
 
-      {/* Kept out of the top line: neither is news, and both matter only once
-          someone is already reading. */}
+      {/* Kept out of the top line: none of the three is news, and each matters
+          only once someone is already reading. */}
       {
-        (data.updated || data.author === 'being') && (
+        (data.updated || data.author === 'being' || project) && (
           <p class="under" data-pagefind-ignore>
             {data.updated && <span>обновлено {displayDate(data.updated)}</span>}
+            {project && <span>проект: <a href={projectPath(project)}>{project.data.title}</a></span>}
             {data.author === 'being' && <span class="being">написано существом</span>}
           </p>
         )

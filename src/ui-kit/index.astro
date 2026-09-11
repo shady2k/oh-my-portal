@@ -9,10 +9,10 @@ import ExperimentSketch from '../components/ExperimentSketch.astro';
 import ExperimentTrail from '../components/ExperimentTrail.astro';
 import Listing from '../components/Listing.astro';
 import Revision from '../components/Revision.astro';
-import { listProjects } from '../site.ts';
+import { listProjects } from '../projects.ts';
 import { listPosts } from '../posts.ts';
 const projects = await listProjects();
-const project = projects.find((item) => item.sketch);
+const project = projects.find((item) => item.data.sketch);
 const posts = await listPosts();
 const revision = posts.flatMap((post) => post.data.revisions ?? [])[0];
 const colors = ['paper', 'paper-sunk', 'ink', 'ink-quiet', 'rule', 'accent'];
@@ -43,11 +43,11 @@ const colors = ['paper', 'paper-sunk', 'ink', 'ink-quiet', 'rule', 'accent'];
     <div class="ui-editorial has-art">
       <div>
         <EditorialNote label="Последнее наблюдение" accent>Факты сохранились, но причина решения потерялась. Это акцентная авторская заметка.</EditorialNote>
-        {project?.stages && <ExperimentTrail stages={project.stages} />}
+        {project?.data.stages && <ExperimentTrail stages={project.data.stages} />}
         <p class="ui-reading">Нажмите на рисунок или подпись. Проверьте Escape, кнопку закрытия, клик вне окна и возврат фокуса. Без JavaScript ссылка открывает файл.</p>
       </div>
       <aside class="ui-editorial-aside">
-        {project?.sketch && <ExperimentSketch sketch={project.sketch} compact />}
+        {project?.data.sketch && <ExperimentSketch sketch={project.data.sketch} compact />}
         <EditorialNote label="Заметка на полях">Что остаётся между разговорами?</EditorialNote>
       </aside>
     </div>

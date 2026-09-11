@@ -14,7 +14,7 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const route of ['/', '/projects/', '/about/', '/archive/', '/tag/ai-agents/', '/search/']) {
+    for (const route of ['/', '/projects/', '/projects/example-engine/', '/about/', '/archive/', '/tag/ai-agents/', '/search/']) {
       assert.equal((await page.goto(base + route, { waitUntil: 'networkidle' }))?.status(), 200);
       const layout = await page.evaluate(() => {
         const rect = (selector: string) => {
@@ -46,7 +46,7 @@ try {
     // Handwritten notes stay on the drawing, in their bands, whatever the text
     // and whatever the picture — tried with the longest annotation the schema
     // accepts (50 characters) on a picture three times wider than tall.
-    for (const route of ['/', '/projects/']) {
+    for (const route of ['/', '/projects/', '/projects/example-engine/']) {
       await page.goto(base + route, { waitUntil: 'networkidle' });
       const wide = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100"><rect width="300" height="100" fill="#ccc"/></svg>');
       await page.locator('.art-plane img').first().evaluate((img: HTMLImageElement, src) => {

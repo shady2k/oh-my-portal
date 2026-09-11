@@ -84,23 +84,24 @@ One type with a `kind` field — simpler for an agent than a hierarchy of types.
 
 ```
 content/
-  posts/<slug>.md        kind: article | note | page
+  posts/<slug>.md        kind: article | note | page; `project` names a project
+  projects/<slug>.md     one project: the register in frontmatter, its page in the body
   data/author.yaml       contact, github, bio
-  data/projects.yaml     project cards
 ```
 
 A `kind: page` entry has its own address — `about` renders at `/about/`, not at
 `/posts/about/` — so pages appear in neither the listings nor the feeds. That is
 the only thing separating them from articles; they are still one type.
 
-The engine finds this tree through `CONTENT_DIR` and `DATA_DIR`. It ships neither:
-`examples/posts` and `examples/data` hold obviously synthetic values so the engine
-builds on its own and so the shape is visible to someone reading the repository.
+The engine finds this tree through `CONTENT_DIR`, `PROJECTS_DIR` and `DATA_DIR`.
+It ships none of them: `examples/posts`, `examples/projects` and `examples/data`
+hold obviously synthetic values so the engine builds on its own and so the shape
+is visible to someone reading the repository.
 
 ### The site's own data
 
-Both files are validated by the same kind of schema as the frontmatter
-(`src/schema/site.ts`), and are just as strict.
+`data/author.yaml` is validated by the same kind of schema as the frontmatter
+(`src/schema/site.ts`), and is just as strict.
 
 ```yaml
 # data/author.yaml
@@ -109,22 +110,37 @@ bio:      "One or two sentences — ends every article (R5)"
 contact:  { label: "...", href: "..." }   # exactly one: R3
 links:    [ { label: github, href: "..." } ]   # R4
 subscribe_action: /subscribe/             # where the form posts (R6); optional
-
-# data/projects.yaml — a register, not a link list (§12)
-- slug:    some-project
-  name:    "..."
-  summary: "..."
-  state:   active | maintained | experiment | paused | archived
-  since:   2026-09-01     # when that state was last true
-  repo:    https://...    # optional
-  site:    https://...    # optional
 ```
 
 `contact` is one entry rather than a list on purpose: six ways to reach someone
-is a way of not being reachable. `state` is what makes the projects page worth
-having — a list of repository links says nothing a profile page would not, and it
-goes stale without a reader being able to tell, while "archived since 2024" is
-still true a year later.
+is a way of not being reachable.
+
+### Projects
+
+A project is a markdown file, `projects/<slug>.md`, whose file name is its slug.
+Its frontmatter is the register (`src/schema/project.ts`, strict); its body is
+the project page's own prose.
+
+```yaml
+title:   "..."
+slug:    some-project           # equals the file name; `index` is reserved
+status:  draft | published
+lang:    ru
+state:   active | maintained | experiment | paused | archived
+summary: "..."
+since:   2026-09-01             # when that state was last true
+stages:  [ { title, state: done | current | next, post? } ]   # 2..5, optional
+question, observation, featured, sketch, repo, site            # optional
+```
+
+`state` is what makes a project worth listing — a list of repository links says
+nothing a profile page would not, and it goes stale without a reader being able
+to tell, while "archived since 2024" is still true a year later.
+
+A post names its project with `project: some-project`. The build refuses a post
+naming a project it does not publish, a stage whose post names another project
+or none, a second featured project, a slug that differs from its file name, and
+a leftover `data/projects.yaml`.
 
 ### Frontmatter
 
@@ -152,6 +168,7 @@ tools:                          # what the article covers
     version: "1.5.9"
 sources:  [https://...]
 related:  [other-slug]
+project:  some-project          # the project this entry belongs to
 ```
 
 The schema is a Zod schema in Astro Content Collections, **validated at build
@@ -191,6 +208,7 @@ doing it all again.
 /tag/<tag>/         tag
 /about/             about
 /projects/          projects
+/projects/<slug>/   project page
 /search/            search
 /rss/               main feed          ← R2, original address, never redirected
 /llms.txt           site map for agents
@@ -305,7 +323,7 @@ Two assertions per old address, not one:
 Plus: no redirect target is itself a redirect. The build fails, not the traffic.
 
 The ai-first layer (§6) adds `/llms.txt`, `/llms-full.txt`, `/posts/<slug>.md`,
-`/posts/<slug>.json`, `/index.json`, `/feeds/<tag>.xml`.
+`/posts/<slug>.json`, `/projects/<slug>.md`, `/index.json`, `/feeds/<tag>.xml`.
 
 ## 6. The ai-first layer
 
@@ -845,8 +863,9 @@ speaking in too many voices at once, and each cut below has one reason.
 - **Labels.** Editorial labels are set in the prose face, small and quiet;
   the monospace face is reserved for data — dates, sizes, tags — so a label
   never looks like a value. The one exception is the uppercase journal masthead,
-  which is a stamp on the cover. The project's open question has no label: its
-  question mark and the page's only italic say what it is. The experiment label
+  which is a stamp on the cover. The project's open question keeps the page's
+  only italic and carries a quiet label: without one, a reader took the
+  sentence for a stray line (2026-09-11). The experiment label
   and its stage share one line, without a coloured dot. The topics row is
   labelled "Темы журнала".
 - **Red.** Red is the author's hand and nothing else: the observation bar, the

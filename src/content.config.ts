@@ -4,7 +4,8 @@ import { defineCollection } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 
 import { frontmatter } from './schema/frontmatter.js';
-import { author, project } from './schema/site.js';
+import { author } from './schema/site.js';
+import { project } from './schema/project.js';
 
 /**
  * The schema itself lives in `src/schema/frontmatter.ts` and is plain Zod, so
@@ -28,9 +29,9 @@ const posts = defineCollection({
 });
 
 /**
- * `data/author.yaml` and `data/projects.yaml` (§4). Same story as `posts`: the
- * content repository supplies them, `DATA_DIR` says where, and `examples/data`
- * is what this repository builds against.
+ * `data/author.yaml` (§4). Same story as `posts`: the content repository
+ * supplies it, `DATA_DIR` says where, and `examples/data` is what this
+ * repository builds against.
  */
 const dataDir = process.env.DATA_DIR ?? 'content/data';
 
@@ -39,14 +40,20 @@ const site = defineCollection({
   schema: author,
 });
 
+/**
+ * `projects/<slug>.md` — one file per project (project-pages design §3). The
+ * frontmatter is the register, the body is the project page.
+ *
+ * The id is the file name, not the frontmatter `slug`. The glob loader would
+ * otherwise take `slug` and let two files with the same one overwrite each other
+ * without a word; a file name cannot be shared, and `linkProblems()` checks that
+ * the slug agrees with it.
+ */
 const projects = defineCollection({
-  // Keyed by slug so the entry id comes from the key and no synthetic `id`
-  // field has to be added to the data, which the strict schema would reject.
-  loader: file(`${dataDir}/projects.yaml`, {
-    parser: (text) =>
-      Object.fromEntries(
-        (parseYaml(text) as { slug: string }[]).map((entry) => [entry.slug, entry]),
-      ),
+  loader: glob({
+    pattern: '*.md',
+    base: process.env.PROJECTS_DIR ?? 'content/projects',
+    generateId: ({ entry }) => entry.replace(/\.md$/, ''),
   }),
   schema: project,
 });

@@ -90,6 +90,8 @@ export const frontmatter = z
     tools: z.array(toolRef).optional(),
     sources: z.array(z.url()).optional(),
     related: z.array(slug).optional(),
+    /** The project this entry belongs to: its page lists the entry, and the entry links back. */
+    project: slug.optional(),
     recipe: recipe.optional(),
   })
   .refine((d) => !d.updated || d.updated >= d.date, {

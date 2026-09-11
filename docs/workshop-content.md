@@ -6,42 +6,68 @@ Existing content without these optional fields still builds.
 
 ## A featured experiment
 
-In `data/projects.yaml`, at most one project can set `featured: true`. This
-selection may remain featured while paused. Otherwise the first active or
-experimental project is used. Without a project the latest entry leads.
+A project is a markdown file, `projects/<slug>.md`, whose file name is its
+slug (`index` is reserved for the projects listing itself). Its frontmatter is
+the register; its body is the project page's own prose — the same idea as a
+post's frontmatter and body. At most one project file can set
+`featured: true`. This selection may remain featured while paused. Otherwise
+the first active or experimental project is used. Without a project the latest
+entry leads.
 
-```yaml
-- slug: example-experiment
-  name: A question worth investigating
-  summary: An explicitly synthetic experiment for demonstrating the engine.
-  state: experiment
-  featured: true
-  since: 2026-09-08
-  observation: What the most recent attempt revealed.
-  question: What remains unresolved?
-  stages:
-    - title: Prototype
-      state: done
-      post: example-prototype
-    - title: Verification
-      state: current
-      post: example-verification
-    - title: Next question
-      state: next
-  sketch:
-    center: agent
-    labels: [memory, experience, initiative, character]
-    caption: Four influences connected to the agent in this experiment.
+```markdown
+---
+title: A question worth investigating
+slug: example-experiment
+status: published
+lang: en
+state: experiment
+summary: An explicitly synthetic experiment for demonstrating the engine.
+since: 2026-09-08
+featured: true
+observation: What the most recent attempt revealed.
+question: What remains unresolved?
+stages:
+  - title: Prototype
+    state: done
+    post: example-prototype
+  - title: Verification
+    state: current
+    post: example-verification
+  - title: Next question
+    state: next
+sketch:
+  center: agent
+  labels: [memory, experience, initiative, character]
+  caption: Four influences connected to the agent in this experiment.
+repo: https://github.com/example/example
+site: https://example.org/
+---
+
+Demonstration text for the project page itself: what the fields above cannot
+say — how the experiment is structured, what has already been checked, and
+what comes next.
 ```
 
-There are two to five stages, with at most one `current` stage. Completed and
-current stages require a `post` slug. References must resolve to visible posts
-in the build; missing or draft-only evidence fails the production build instead
-of publishing a dead or private link. Future stages can remain unlinked. The
-illustration has exactly four short labels and an accessible caption. Use labels
-that explain the selected experiment. It is a diagram, not measured telemetry.
+A post names the project it belongs to with `project: example-experiment` in
+its own frontmatter.
 
-The same trail, observation and diagram explanation travel to project Markdown
+There are two to five stages, with at most one `current` stage. A stage's
+`post` is optional for every state — a planned stage has no evidence yet, and
+that is why the link is optional rather than required once a stage is done or
+current. Future stages can remain unlinked. The illustration has exactly four
+short labels and an accessible caption. Use labels that explain the selected
+experiment. It is a diagram, not measured telemetry. `repo` and `site` are
+optional: links to the project's repository and its own site, shown on the
+project page when present.
+
+The build refuses: a post naming a project that is not published; a stage
+linking a post that is not published, or that names a different project (or
+none); more than one project set `featured: true`; a project whose `slug`
+differs from its file name; a project file named `index.md`; and a leftover
+`data/projects.yaml` — that register is retired, and the build refuses rather
+than silently ignoring it.
+
+The same trail, observation and diagram explanation travel to the project page
 and the homepage Markdown catalogue. A project without a sketch has no invented
 illustration. Nothing fetches private activity or infers current work.
 
