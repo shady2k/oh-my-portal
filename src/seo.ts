@@ -15,8 +15,12 @@ import type { Author } from './schema/site.ts';
  * It comes from the content repository (§2), so this repository never knows it
  * at author time. The fallback is the journal's genre rather than a person's
  * name — a placeholder name is the one thing a public engine must not ship.
+ *
+ * A site name of its own wins over the author's: the full name still signs the
+ * articles, the footer and the structured data, and does not need to head every
+ * page as well.
  */
-export const siteName = (author?: Author) => author?.name ?? 'Полевой журнал';
+export const siteName = (author?: Author) => author?.site_name ?? author?.name ?? 'Полевой журнал';
 
 /**
  * `<title>`: the page first, the site last.

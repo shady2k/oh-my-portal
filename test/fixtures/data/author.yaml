@@ -1,9 +1,16 @@
 name: Тестовый Автор
+site_name: Тестовый Журнал
+icon: /images/test-author/icon.svg
+headline:
+  - Первый девиз журнала
+  - Второй девиз журнала
 bio: Строка для проверки авторского блока.
+avatar: /images/test-author/avatar.webp
 contact:
   label: почта
   href: mailto:test@example.invalid
 links:
   - label: github
     href: https://github.com/example/test
+    qr: /images/test-author/qr.svg
 subscribe_action: /subscribe/

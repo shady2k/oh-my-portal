@@ -5,6 +5,7 @@ import Subscribe from '../../components/Subscribe.astro';
 import PageHeader from '../../components/ui/PageHeader.astro';
 import Base from '../../layouts/Base.astro';
 import { getPage } from '../../posts.ts';
+import { linkAttrs } from '../../links.ts';
 import { getAuthor } from '../../site.ts';
 
 /**
@@ -26,11 +27,11 @@ const Content = page ? (await render(page)).Content : null;
 ---
 
 <Base
-  title={page?.data.title ?? 'О себе'}
-  description={page?.data.summary ?? author?.bio ?? 'О себе и о том, как связаться.'}
+  title={page?.data.title ?? 'Обо мне'}
+  description={page?.data.summary ?? author?.bio ?? 'Обо мне и о том, как связаться.'}
 >
   <article data-pagefind-body>
-    <PageHeader title={page?.data.title ?? 'О себе'} />
+    <PageHeader title={page?.data.title ?? 'Обо мне'} />
     <div class="ui-reading">
 
     {
@@ -38,8 +39,16 @@ const Content = page ? (await render(page)).Content : null;
         <>
           {/* A page about someone should say who. The heading is the page's name,
               not the person's — those are different things. */}
-          <p class="name">{author.name}</p>
-          <p class="bio">{author.bio}</p>
+          <div class="who">
+            {/* Same reasoning as the author block: the name sits beside it. */}
+            {author.avatar && (
+              <img class="portrait" src={author.avatar} alt="" width="120" height="120" decoding="async" />
+            )}
+            <div>
+              <p class="name">{author.name}</p>
+              <p class="bio">{author.bio}</p>
+            </div>
+          </div>
         </>
       )
     }
@@ -53,14 +62,14 @@ const Content = page ? (await render(page)).Content : null;
         <dl class="contacts" data-pagefind-ignore>
           <dt class="field-label">связаться</dt>
           <dd>
-            <a href={author.contact.href}>{author.contact.label}</a>
+            <a href={author.contact.href} {...linkAttrs(author.contact.href, Astro.site)}>{author.contact.label}</a>
           </dd>
           {author.links.length > 0 && (
             <>
               <dt class="field-label">ещё</dt>
               <dd class="links">
                 {author.links.map((link) => (
-                  <a href={link.href} rel="me">
+                  <a href={link.href} {...linkAttrs(link.href, Astro.site, ['me'])}>
                     {link.label}
                   </a>
                 ))}
@@ -68,6 +77,22 @@ const Content = page ? (await render(page)).Content : null;
             </>
           )}
         </dl>
+      )
+    }
+
+    {/* Codes for the reader at a desk who wants to write from their phone. Hidden
+        on a narrow screen: there the reader is already holding the phone, and
+        the link beside it is one tap. alt="" because the link is right there. */}
+    {
+      author && [author.contact, ...author.links].some((link) => link.qr) && (
+        <div class="qr-codes" data-pagefind-ignore>
+          {[author.contact, ...author.links].filter((link) => link.qr).map((link) => (
+            <figure>
+              <img src={link.qr} alt="" width="140" height="140" loading="lazy" decoding="async" />
+              <figcaption class="utility">{link.label}</figcaption>
+            </figure>
+          ))}
+        </div>
       )
     }
     </div>
@@ -88,6 +113,51 @@ const Content = page ? (await render(page)).Content : null;
   .bio {
     font-size: var(--step-1);
     line-height: 1.45;
+  }
+
+  .who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .who > div {
+    flex: 1 1 18rem;
+  }
+
+  .portrait {
+    flex: none;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .qr-codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-block-start: var(--space-3);
+  }
+
+  .qr-codes figure {
+    margin: 0;
+    text-align: center;
+  }
+
+  .qr-codes img {
+    display: block;
+    border-radius: 4px;
+  }
+
+  .qr-codes figcaption {
+    margin-block-start: var(--space-1);
+    color: var(--ink-quiet);
+  }
+
+  @media (max-width: 44rem) {
+    .qr-codes {
+      display: none;
+    }
   }
 
   .contacts {

@@ -79,6 +79,77 @@ describe('R4, R5: the author block at the end of an article', () => {
   it('stays out of the search index — it is furniture on every page', () => {
     expect(article()).toMatch(/data-pagefind-ignore/);
   });
+
+  it('shows the portrait from the content images, sized so the layout does not jump', () => {
+    const img = portrait(article());
+    expect(img).toMatch(/width="\d+"/);
+    expect(img).toMatch(/height="\d+"/);
+    // The name is printed right beside it; announcing it twice is noise.
+    expect(img).toContain('alt=""');
+  });
+});
+
+/** The author's portrait tag, or an empty string when the page has none. */
+const portrait = (html: string) => html.match(/<img[^>]*\/images\/test-author\/avatar\.webp[^>]*>/)?.[0] ?? '';
+
+describe('the masthead and the mottos', () => {
+  const header = (html: string) => html.match(/<header[^>]*site-header[\s\S]*?<\/header>/)?.[0] ?? '';
+
+  it('calls the about page one thing in the header, the footer and its markdown twin', () => {
+    const html = read('archive/index.html');
+    const labels = (region: string) =>
+      [...region.matchAll(/<a[^>]*href="\/about\/"[^>]*>([^<]*)<\/a>/g)].map((m) => m[1]!.trim());
+    expect(labels(header(html))).toEqual(['обо мне']);
+    expect(labels(html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '')).toContain('обо мне');
+    expect(read('about/index.md')).toMatch(/^# Обо мне/m);
+  });
+
+  it('marks the section a page belongs to, and none on the homepage', () => {
+    const current = (html: string) =>
+      [...header(html).matchAll(/<a[^>]*href="([^"]+)"[^>]*aria-current="page"/g)].map((m) => m[1]);
+    expect(current(read('about/index.html'))).toEqual(['/about/']);
+    expect(current(read('posts/published-example/index.html'))).toEqual(['/archive/']);
+    expect(current(read('index.html'))).toEqual([]);
+  });
+
+  it('names the site rather than the author, with its icon beside the name', () => {
+    const html = header(read('about/index.html'));
+    expect(html).toContain('Тестовый Журнал');
+    expect(html).not.toContain('Тестовый Автор');
+    expect(html).toMatch(/<img[^>]*\/images\/test-author\/icon\.svg[^>]*alt=""/);
+  });
+
+  it('prints the first motto without JavaScript and hands the page every one', () => {
+    const home = read('index.html');
+    const h1 = home.match(/<h1[^>]*data-typed-headline[\s\S]*?<\/h1>/)?.[0] ?? '';
+    expect(h1).toMatch(/class="sr-only"[^>]*>Первый(\s|&nbsp;)+девиз/);
+    expect(h1).toMatch(/Второй(\s|&nbsp;)+девиз/);
+  });
+});
+
+describe('external links open in a new tab', () => {
+  const article = () => read('posts/published-example/index.html');
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+  const anchor = (html: string, href: string) => html.match(new RegExp(`<a[^>]*href="${escape(href)}"[^>]*>`))?.[0] ?? '';
+
+  it('in the body of an article', () => {
+    const a = anchor(article(), 'https://example.org/external');
+    expect(a).toContain('target="_blank"');
+    expect(a).toMatch(/rel="[^"]*noopener/);
+  });
+
+  it('in the author block, keeping rel="me"', () => {
+    const a = anchor(article(), 'https://github.com/example/test');
+    expect(a).toContain('target="_blank"');
+    expect(a).toMatch(/rel="[^"]*\bme\b/);
+    expect(a).toMatch(/rel="[^"]*noopener/);
+  });
+
+  it('but not for mail, and not for addresses on the site itself', () => {
+    expect(anchor(article(), 'mailto:test@example.invalid')).not.toBe('');
+    expect(anchor(article(), 'mailto:test@example.invalid')).not.toContain('target=');
+    expect(anchor(article(), '/archive/')).not.toContain('target=');
+  });
 });
 
 describe('R7: sharing where the audience actually is', () => {
@@ -123,6 +194,18 @@ describe('R6: subscription', () => {
 describe('R8: /about/ and /projects/', () => {
   it('serves /about/ at the address /aboutme/ redirects to', () => {
     expect(read('about/index.html')).toContain('Тестовый Автор');
+  });
+
+  it('puts the portrait on /about/, where a reader goes to see who wrote this', () => {
+    expect(portrait(read('about/index.html'))).not.toBe('');
+  });
+
+  it('shows the QR code of a link on /about/, and only there', () => {
+    const qr = /<img[^>]*\/images\/test-author\/qr\.svg[^>]*>/;
+    expect(read('about/index.html')).toMatch(qr);
+    // At the end of every article it would be the heaviest mark on the page,
+    // for the rare reader who wants to write rather than read on.
+    expect(read('posts/published-example/index.html')).not.toMatch(qr);
   });
 
   it('lists projects with a state rather than as links', () => {

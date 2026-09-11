@@ -26,7 +26,32 @@ try {
       assert.deepEqual(layout.main, layout.header, `${route}: main and header share frame`);
       assert.deepEqual(layout.main, layout.footer, `${route}: main and footer share frame`);
       assert.equal(layout.overflow, false, `${route} at ${width}: no overflow`);
+
+      // The current section wears the same ink bar as the chosen theme, and nothing else does.
+      const marks = await page.evaluate(() => [...document.querySelectorAll('.masthead a')].map((a) => ({
+        current: a.getAttribute('aria-current') === 'page',
+        bar: getComputedStyle(a).boxShadow !== 'none',
+        bottom: a.getBoundingClientRect().bottom,
+      })));
+      const current = marks.filter((mark) => mark.current);
+      assert.equal(current.length, route === '/' ? 0 : 1, `${route}: one section is current`);
+      for (const mark of marks) {
+        assert.equal(mark.bar, mark.current, `${route} at ${width}: only the current section carries the bar`);
+      }
+      if (width === 1440 && current[0]) {
+        const theme = await page.evaluate(() => document.querySelector('.theme-picker input:checked + .theme-option')!.getBoundingClientRect().bottom);
+        assert.ok(Math.abs(current[0].bottom - theme) <= 1, `${route}: the section bar lines up with the theme bar`);
+      }
     }
+    // A link that leaves the site says so with an arrow; one that stays does not.
+    await page.goto(base + '/about/', { waitUntil: 'networkidle' });
+    const arrows = await page.evaluate(() => [...document.querySelectorAll('main a[href]')].map((a) => ({
+      external: a.getAttribute('target') === '_blank',
+      arrow: getComputedStyle(a, '::after').content.includes('↗'),
+    })));
+    assert.ok(arrows.some((link) => link.external), 'about page has an external link to check');
+    for (const link of arrows) assert.equal(link.arrow, link.external, `at ${width}: the arrow marks exactly the external links`);
+
     await page.goto(base + '/projects/', { waitUntil: 'networkidle' });
     assert.ok((await page.locator('.experiment-sketch').first().boundingBox())!.width <= 400);
     for (const selector of ['.art-link', '.art-hint a']) {

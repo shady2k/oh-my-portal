@@ -38,6 +38,9 @@ const noindex = STAGING || Astro.props.noindex === true;
    It supplies the site's name too, so the head and the wordmark cannot disagree. */
 const author = await getAuthor();
 const site = siteName(author);
+/* The site's own mark when the content repository has one, the engine's otherwise. */
+const icon = author?.icon ?? '/favicon.svg';
+const iconType = icon.endsWith('.svg') ? 'image/svg+xml' : icon.endsWith('.png') ? 'image/png' : 'image/webp';
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const origin = new URL('/', Astro.site);
@@ -76,7 +79,7 @@ const markdown = path.endsWith('/') ? `${path}index.md` : null;
 const sections = [
   { href: '/archive/', label: 'журнал', match: (p: string) => p.startsWith('/archive/') || p.startsWith('/posts/') || p.startsWith('/tag/') },
   { href: '/projects/', label: 'проекты', match: (p: string) => p.startsWith('/projects/') },
-  { href: '/about/', label: 'о себе', match: (p: string) => p.startsWith('/about/') },
+  { href: '/about/', label: 'обо мне', match: (p: string) => p.startsWith('/about/') },
   { href: '/search/', label: 'поиск', match: (p: string) => p.startsWith('/search/') },
 ];
 ---
@@ -92,7 +95,7 @@ const sections = [
     {noindex && <meta name="robots" content={STAGING ? 'noindex, nofollow' : 'noindex'} />}
     {/* Absent rather than a placeholder when no content repository is mounted. */}
     {author && <meta name="author" content={author.name} />}
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={icon} type={iconType} />
     {/*
       The paper tokens, spelled out: `content` cannot read a custom property, so
       these two are the one place in the project where a colour is duplicated
@@ -166,7 +169,11 @@ const sections = [
     <a class="skip utility" href="#main">к содержанию</a>
 
     <header class="frame site-header">
-      <a class="wordmark" href="/">{site}</a>
+      <a class="wordmark" href="/">
+        {/* alt="" because the name follows it inside the same link. */}
+        {author?.icon && <img class="wordmark-icon" src={author.icon} alt="" width="28" height="28" />}
+        <span>{site}</span>
+      </a>
       {/* The content repository supplies the identity; navigation stays shared. */}
       <nav class="masthead" aria-label="разделы">
         {
@@ -282,10 +289,24 @@ const sections = [
   }
 
   .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: var(--step-1);
     font-weight: 700;
     letter-spacing: -0.04em;
     text-decoration: none;
+  }
+
+  /*
+   * The icon swaps its own colours with the system scheme, but a reader can
+   * override the site's theme, and then a dark tile can land on a dark page.
+   * The hairline keeps its edge visible in every combination.
+   */
+  .wordmark-icon {
+    flex: none;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px var(--rule);
   }
 
   @media (max-width: 40rem) {
@@ -296,10 +317,24 @@ const sections = [
     .wordmark { padding-block-start: var(--space-2); }
   }
 
-  .masthead a { text-decoration: none; }
+  /*
+   * Each section sits in the same 2.75rem box as a theme option, so the two bars
+   * share a line — and the box is a comfortable tap target on a phone.
+   */
+  .masthead a {
+    display: inline-grid;
+    place-items: center;
+    min-block-size: 2.75rem;
+    text-decoration: none;
+  }
   .masthead a:hover, .masthead a:focus-visible { text-decoration: underline; }
 
+  /*
+   * The current section wears the theme control's mark: an ink bar under it, no
+   * colour. One way of saying "this one is chosen" across the whole header.
+   */
   .masthead a.here {
     color: var(--ink);
+    box-shadow: inset 0 -2px var(--ink);
   }
 </style>

@@ -1,19 +1,36 @@
 ---
 import { displayHeading } from '../../typography.ts';
 
-interface Props { text: string; }
-const { text } = Astro.props;
-const title = displayHeading(text);
+/**
+ * The homepage headline, typed once.
+ *
+ * Given several mottos it prints one per visit. The first is what the server
+ * renders — the page without JavaScript, with reduced motion, and the line a
+ * crawler reads — and the client may swap in another before typing it. The
+ * reserve holds the longest, so whichever is chosen the layout does not move.
+ */
+interface Props { text: string | string[]; }
+const titles = [Astro.props.text].flat().map(displayHeading);
+const first = titles[0]!;
+const longest = titles.reduce((a, b) => (b.length > a.length ? b : a));
 ---
-<h1 class="typed-headline" data-typed-headline>
-  <span class="headline-reserve" aria-hidden="true">{title}<span class="cursor-space"></span></span>
-  <span class="headline-display" aria-hidden="true"><span data-typed-text>{title}</span><span class="cursor" aria-hidden="true"></span></span>
-  <span class="sr-only">{title}</span>
+<h1 class="typed-headline" data-typed-headline data-mottos={JSON.stringify(titles)}>
+  <span class="headline-reserve" aria-hidden="true">{longest}<span class="cursor-space"></span></span>
+  <span class="headline-display" aria-hidden="true"><span data-typed-text>{first}</span><span class="cursor" aria-hidden="true"></span></span>
+  <span class="sr-only">{first}</span>
 </h1>
 <script>
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   document.querySelectorAll<HTMLElement>('[data-typed-headline]').forEach((heading) => {
     const output = heading.querySelector<HTMLElement>('[data-typed-text]')!;
+    const spoken = heading.querySelector<HTMLElement>('.sr-only');
+    const mottos = JSON.parse(heading.dataset.mottos ?? '[]') as string[];
+    /* Reduced motion keeps the first: a different line on every load is motion too. */
+    if (!reduced.matches && mottos.length > 1) {
+      const chosen = mottos[Math.floor(Math.random() * mottos.length)]!;
+      output.textContent = chosen;
+      if (spoken) spoken.textContent = chosen;
+    }
     const text = output.textContent ?? '';
     const letters = Array.from(text);
     let timer: ReturnType<typeof setTimeout>;

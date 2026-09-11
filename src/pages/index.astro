@@ -26,17 +26,19 @@ const being = posts.find((p) => p.data.author === 'being');
 const changed = posts.flatMap((post) => (post.data.revisions ?? []).map((revision) => ({ post, revision })))
   .sort((a, b) => b.revision.date.getTime() - a.revision.date.getTime())[0];
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+/* One headline or several mottos; the first is the one the title and a crawler get. */
+const mottos = [author?.headline ?? 'Идеи, которые стали опытом'].flat();
 ---
 
 <Base
   title={siteName(author)}
-  tagline={displayHeading(author?.headline ?? 'Идеи, которые стали опытом')}
+  tagline={displayHeading(mottos[0]!)}
   description="Записи о домашней инфраструктуре, инструментах и агентах."
 >
   <header class="intro">
     <div class="intro-copy">
     <p class="field-label journal-name">Полевой журнал</p>
-    <TypedHeadline text={author?.headline ?? 'Идеи, которые стали опытом'} />
+    <TypedHeadline text={mottos} />
     {author?.bio && <p class="intro-text">{author.bio}</p>}
     </div>
     <a class="journal-jump" href="#journal">К свежим записям <span aria-hidden="true">↓</span></a>

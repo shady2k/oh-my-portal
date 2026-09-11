@@ -7,6 +7,7 @@ import Share from '../components/Share.astro';
 import Subscribe from '../components/Subscribe.astro';
 import Tag from '../components/Tag.astro';
 import { twinHash } from '../history.ts';
+import { linkAttrs } from '../links.ts';
 import { listPosts } from '../posts.ts';
 import { articleMarkdown } from '../projections.ts';
 import Base from './Base.astro';
@@ -125,7 +126,7 @@ const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
           <ul>
             {data.sources.map((href) => (
               <li class="utility">
-                <a href={href}>{href}</a>
+                <a href={href} {...linkAttrs(href, Astro.site)}>{href}</a>
               </li>
             ))}
           </ul>

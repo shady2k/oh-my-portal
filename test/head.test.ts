@@ -37,13 +37,13 @@ describe('the head of a built page', () => {
   beforeAll(() => build({}, OUT), 180_000);
 
   it('names the site in every title, so a tab is not just «Поиск»', () => {
-    expect(title(page('search'))).toBe('Поиск — Тестовый Автор');
-    expect(title(page('projects'))).toBe('Проекты — Тестовый Автор');
+    expect(title(page('search'))).toBe('Поиск — Тестовый Журнал');
+    expect(title(page('projects'))).toBe('Проекты — Тестовый Журнал');
   });
 
-  it('titles the homepage with the site and its headline, not with a section', () => {
+  it('titles the homepage with the site and its first motto, not with a section', () => {
     /* It used to say «Записи» while its own h1 said something else entirely. */
-    expect(title(read('index.html'))).toMatch(/^Тестовый Автор — /);
+    expect(title(read('index.html'))).toMatch(/^Тестовый Журнал — Первый(\s|&nbsp;)+девиз/);
   });
 
   it('leads a tag page with the tag rather than with the word «Тема»', () => {
@@ -56,7 +56,7 @@ describe('the head of a built page', () => {
     expect(one(html, 'og:title')).toBe('Опубликованная запись');
     expect(one(html, 'og:description')).toBe('Существует в сборке.');
     expect(one(html, 'og:url')).toBe(`${SITE}/posts/published-example/`);
-    expect(one(html, 'og:site_name')).toBe('Тестовый Автор');
+    expect(one(html, 'og:site_name')).toBe('Тестовый Журнал');
     expect(one(html, 'og:locale')).toBe('ru_RU');
     expect(one(html, 'og:image')).toBe(`${SITE}/og.png`);
     expect(one(html, 'twitter:card')).toBe('summary_large_image');
@@ -75,8 +75,9 @@ describe('the head of a built page', () => {
     expect(one(html, 'article:author')).toBe('Тестовый Автор');
   });
 
-  it('serves a favicon and points at it', () => {
-    expect(read('index.html')).toContain('rel="icon"');
+  it('points the favicon at the site icon when the content repository has one', () => {
+    expect(read('index.html')).toMatch(/<link rel="icon" href="\/images\/test-author\/icon\.svg" type="image\/svg\+xml"/);
+    // The engine's own mark still ships, for a site that has none.
     expect(read('favicon.svg')).toContain('<svg');
   });
 

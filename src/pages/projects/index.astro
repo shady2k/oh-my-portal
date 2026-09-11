@@ -7,6 +7,7 @@ import EditorialNote from '../../components/ui/EditorialNote.astro';
 import ExperimentSketch from '../../components/ExperimentSketch.astro';
 import ExperimentTrail from '../../components/ExperimentTrail.astro';
 import { displayDate } from '../../dates.ts';
+import { linkAttrs } from '../../links.ts';
 import { getPage } from '../../posts.ts';
 import { listProjects, STATE_LABEL } from '../../site.ts';
 
@@ -50,8 +51,8 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
                 {project.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.observation}</EditorialNote></div>}
                 {!project.sketch && project.question && <div class="question"><EditorialNote label="Открытый вопрос">{project.question}</EditorialNote></div>}
                 {(project.repo || project.site) && <p class="links" data-pagefind-ignore>
-                  {project.repo && <a href={project.repo}>Исходники</a>}
-                  {project.site && <a href={project.site}>Сайт проекта</a>}
+                  {project.repo && <a href={project.repo} {...linkAttrs(project.repo, Astro.site)}>Исходники</a>}
+                  {project.site && <a href={project.site} {...linkAttrs(project.site, Astro.site)}>Сайт проекта</a>}
                 </p>}
               </div>
               {project.sketch && <aside class="ui-editorial-aside">

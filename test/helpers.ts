@@ -18,6 +18,7 @@ export function build(env: Record<string, string>, out: string) {
       ...process.env,
       CONTENT_DIR: 'test/fixtures/posts',
       DATA_DIR: 'test/fixtures/data',
+      IMAGES_DIR: 'test/fixtures/images',
       /*
        * A real host, so the fixtures exercise the path a deployment takes. The
        * config's `https://example.com` fallback is what check-outputs.ts now
@@ -47,6 +48,14 @@ const TYPES: Record<string, string> = {
   '.md': 'text/markdown; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
   '.pagefind': 'application/wasm',
+  /*
+   * A browser sniffs a raster image served as octet-stream and draws it anyway,
+   * but never an SVG: without its type an SVG is a broken image. The portrait
+   * rendered and the QR code did not, which is how this line got here.
+   */
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.png': 'image/png',
 };
 
 /**

@@ -147,6 +147,26 @@ a:focus-visible {
   text-decoration-color: var(--ink);
 }
 
+/*
+ * A link that leaves the site says so before it is clicked. Every external link
+ * opens in a new tab (src/links.ts and the Markdown plugin in astro.config.mjs),
+ * so the tab target is the one reliable mark to hang this on.
+ *
+ * The second `content` gives the arrow an empty alternative, so a screen reader
+ * announces the link rather than "north-east arrow"; a browser that does not
+ * know that syntax keeps the first and still shows the arrow. Inline-block keeps
+ * the link's underline from running under it.
+ */
+a[target="_blank"]::after {
+  content: "↗";
+  content: "↗" / "";
+  display: inline-block;
+  margin-inline-start: 0.12em;
+  font-size: 0.8em;
+  line-height: 1;
+  text-decoration: none;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;

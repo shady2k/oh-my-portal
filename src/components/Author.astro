@@ -1,4 +1,5 @@
 ---
+import { linkAttrs } from '../links.ts';
 import { getAuthor } from '../site.ts';
 
 /**
@@ -19,12 +20,21 @@ const author = await getAuthor();
   author && (
     <aside class="author" data-pagefind-ignore>
       <p class="field-label">автор</p>
-      <p class="name">{author.name}</p>
-      <p class="bio">{author.bio}</p>
+      <div class="who">
+        {/* alt="" because the name is printed right beside it: a screen reader
+            would otherwise announce the same person twice in a row. */}
+        {author.avatar && (
+          <img class="avatar" src={author.avatar} alt="" width="56" height="56" loading="lazy" decoding="async" />
+        )}
+        <div>
+          <p class="name">{author.name}</p>
+          <p class="bio">{author.bio}</p>
+        </div>
+      </div>
       <p class="links utility">
-        <a href={author.contact.href}>{author.contact.label}</a>
+        <a href={author.contact.href} {...linkAttrs(author.contact.href, Astro.site)}>{author.contact.label}</a>
         {author.links.map((link) => (
-          <a href={link.href} rel="me">
+          <a href={link.href} {...linkAttrs(link.href, Astro.site, ['me'])}>
             {link.label}
           </a>
         ))}
@@ -42,6 +52,18 @@ const author = await getAuthor();
 
   p {
     margin: 0;
+  }
+
+  .who {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .avatar {
+    flex: none;
+    border-radius: 50%;
+    object-fit: cover;
   }
 
   .name {

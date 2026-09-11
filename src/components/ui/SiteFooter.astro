@@ -1,4 +1,5 @@
 ---
+import { linkAttrs } from '../../links.ts';
 import type { Author } from '../../schema/site.ts';
 interface Props { author?: Author | null; }
 const { author } = Astro.props;
@@ -7,8 +8,8 @@ const year = new Date().getUTCFullYear();
 <footer class="frame site-footer" data-pagefind-ignore>
   <p>{author ? <>© {year} <a href="/about/">{author.name}</a></> : 'Полевой журнал'}</p>
   <nav aria-label="Информация о сайте">
-    <a href="/about/">Об авторе</a>
-    {author && <a href={author.contact.href}>{author.contact.label}</a>}
+    <a href="/about/">обо мне</a>
+    {author && <a href={author.contact.href} {...linkAttrs(author.contact.href, Astro.site)}>{author.contact.label}</a>}
     <a href="/rss/index.xml">RSS</a>
   </nav>
 </footer>

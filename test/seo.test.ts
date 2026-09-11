@@ -12,6 +12,12 @@ describe('the site name', () => {
     );
   });
 
+  it('prefers a site name to the author name when the content repository sets one', () => {
+    expect(
+      siteName({ name: 'Имя', site_name: 'журнал', bio: 'x', contact: { label: 'a', href: 'b' }, links: [] }),
+    ).toBe('журнал');
+  });
+
   it('falls back to the genre, never to a placeholder person', () => {
     expect(siteName(undefined)).toBe('Полевой журнал');
   });

@@ -1,4 +1,5 @@
 // @ts-check
+import { satteri } from '@astrojs/markdown-satteri';
 import { defineConfig } from 'astro/config';
 
 import { codeTheme, syntaxVariables } from './src/styles/code-theme.ts';
@@ -43,6 +44,43 @@ const contentImages = {
   },
 };
 
+/**
+ * External links in article bodies open in a new tab.
+ *
+ * The same rule `src/links.ts` gives the templates: an `http(s)` address on
+ * another host gets `target="_blank"` and `rel="noopener"`, and mail links and the
+ * site's own pages stay where they are.
+ *
+ * A Sätteri hast plugin, not a rehype one: Astro 7 renders Markdown with Sätteri,
+ * and `markdown.rehypePlugins` only runs on the old unified processor, which is
+ * not installed. Nodes are read-only here; attributes go through `ctx`.
+ *
+ * The visitor must be `{ filter, visit }`. Given a bare function, Sätteri throws
+ * on every document — and Astro renders that as an empty article body without a
+ * word in the build log. The body-text assertions in test/pages.test.ts are what
+ * caught it.
+ */
+const siteHost = new URL(site).host;
+const externalLinks = {
+  name: 'external-links',
+  element: {
+    filter: ['a'],
+    /** @param {any} node @param {any} ctx */
+    visit(node, ctx) {
+      const href = String(node.properties?.href ?? '');
+      let external = false;
+      try {
+        external = /^https?:\/\//i.test(href) && new URL(href).host !== siteHost;
+      } catch {
+        external = false;
+      }
+      if (!external) return;
+      ctx.setProperty(node, 'target', '_blank');
+      ctx.setProperty(node, 'rel', [...new Set([...[node.properties?.rel ?? []].flat(), 'noopener'])]);
+    },
+  },
+};
+
 /** @type {import('astro').AstroIntegration} */
 const uiKit = {
   name: 'field-journal-ui-kit',
@@ -77,6 +115,7 @@ export default defineConfig({
     port: Number(process.env.PORT ?? 4321),
   },
   markdown: {
+    processor: satteri({ hastPlugins: [externalLinks] }),
     /*
      * Design §12. Astro's default is Shiki with `github-dark`, which puts a dark
      * slab on a near-white page in colours nothing else on the site can reach.

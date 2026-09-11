@@ -165,7 +165,7 @@ export function aboutMarkdown(
   author: { name: string; bio: string; contact: { label: string; href: string }; links: { label: string; href: string }[] } | undefined,
   body: string | undefined,
 ): string {
-  const lines = ['# О себе', ''];
+  const lines = ['# Обо мне', ''];
   if (author) lines.push(author.bio, '');
   if (body) lines.push(body.trim(), '');
   if (author) {
