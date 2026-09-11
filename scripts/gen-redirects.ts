@@ -62,12 +62,17 @@ const fail = (what: string, problems: string[]): never => {
 
 const map = expand(readFileSync(source, 'utf8'));
 
+/** How many old addresses the list held, so the summary can say what it checked. */
+let listed: number | undefined;
+
 if (coverage) {
   const addresses = readFileSync(coverage, 'utf8')
     .split('\n')
-    .map((s) => s.trim());
+    .map((s) => s.trim())
+    .filter(Boolean);
   const missing = uncovered(map, addresses);
   if (missing.length) fail(coverage, missing.map((a) => `\`${a}\` is an old address the map does not mention`));
+  listed = addresses.length;
 }
 
 const merged = mergeAliases(map, collectAliases(process.env.CONTENT_DIR ?? 'content/posts'));
@@ -109,8 +114,14 @@ if (check) {
   console.log(`${out} is up to date (${redirects.length} redirects).`);
 } else {
   writeFileSync(out, rendered);
-  console.log(
-    `${out}: ${redirects.length} redirects, ` +
-      `${map.unchanged.length} addresses unchanged, ${map.redirects.length + map.unchanged.length} covered.`,
-  );
+  /*
+   * Each number says what it counted, because two of them are easy to confuse:
+   * the redirects are what this wrote — migration entries plus every `aliases`
+   * line in the corpus — while the old addresses are the list, which the map
+   * must exhaust. The line is read to see that a rename or an import landed, and
+   * a count that quietly meant the other thing would read as success.
+   */
+  const parts = [`${redirects.length} redirects`, `${merged.unchanged.length} addresses unchanged`];
+  if (listed !== undefined) parts.push(`${listed} old addresses, all covered`);
+  console.log(`${out}: ${parts.join(', ')}.`);
 }
