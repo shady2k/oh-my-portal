@@ -737,6 +737,25 @@ stops after three cycles. Omit a single terminal period in this display heading;
 retain question/exclamation marks and ellipses. Body text and source projections
 keep their original punctuation.
 
+### Page jump (2026-09-11)
+
+An article carries two floating controls at the bottom right of the frame: ↑ to
+the site header and ↓ to the neighbouring-articles block. Each shows only while
+it is useful — ↑ once the article's header has left the screen, ↓ until the end
+block arrives — so a short article shows neither. They are plain fragment
+links, so Back returns the reader to where they were, and the jump is instant.
+Without JavaScript nothing floats.
+
+The targets are `#page:top` and `#page:end`. The heading slugger strips `:`, so
+no heading can take either id; `test/pages.test.ts` keeps fixture headings of
+those names to prove it.
+
+`oh-my-portal-wmo` prescribes a static contents block first and a floating
+control only once the static one is found wanting. For up and down the
+maintainer chose the floating control directly, with its cost stated: a widget
+over the text, a script, and on a phone the right end of the bottom two lines
+covered while it shows. The contents list itself remains `wmo`.
+
 ### Approved field journal direction (2026-09-09)
 
 The maintainer selected the light field journal concept. This decision supersedes

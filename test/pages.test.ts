@@ -357,3 +357,49 @@ describe('a project and what points at it', () => {
     expect(read('projects/index.md')).toContain(`## [Живой проект](${url})`);
   });
 });
+
+describe('page jump: targets no heading can take', () => {
+  const article = () => read('posts/published-example/index.html');
+  const count = (html: string, id: string) => html.split(`id="${id}"`).length - 1;
+
+  it('puts ↑ on the site header and ↓ on the neighbours block', () => {
+    const html = article();
+    expect(html).toMatch(/<header(?=[^>]*\bsite-header\b)(?=[^>]*\bid="page:top")[^>]*>/);
+    expect(html).toMatch(/<nav(?=[^>]*\bafter-nav\b)(?=[^>]*\bid="page:end")[^>]*>/);
+  });
+
+  /*
+   * The fixture has headings literally called "page:top" and "page:end". The
+   * heading slugger strips ":", so they get other ids and each target stays
+   * unique. If an Astro or github-slugger upgrade starts keeping the colon, this
+   * fails before a heading can capture a jump on a real article.
+   */
+  it('keeps each target unique when headings are named after them', () => {
+    const html = article();
+    expect(html).toMatch(/<h2[^>]*>page:top<\/h2>/);
+    expect(html).toMatch(/<h2[^>]*>page:end<\/h2>/);
+    expect(count(html, 'page:top')).toBe(1);
+    expect(count(html, 'page:end')).toBe(1);
+  });
+});
+
+describe('page jump: the control', () => {
+  const block = (html: string) => html.match(/<nav(?=[^>]*\bpage-jump\b)[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
+
+  it('ships hidden on an article, out of the search index, linking to both targets', () => {
+    const nav = block(read('posts/published-example/index.html'));
+    const open = nav.match(/^<nav[^>]*>/)?.[0] ?? '';
+    // Hidden until the script can tell when each control is useful.
+    expect(open).toMatch(/\shidden(\s|>|=)/);
+    expect(open).toContain('data-pagefind-ignore');
+    expect(open).toContain('aria-label="по статье"');
+    expect(nav).toMatch(/<a[^>]*href="#page:top"[^>]*aria-label="наверх"/);
+    expect(nav).toMatch(/<a[^>]*href="#page:end"[^>]*aria-label="в конец статьи"/);
+  });
+
+  it('is on articles only', () => {
+    for (const page of ['index.html', 'archive/index.html', 'projects/index.html', 'projects/live-thing/index.html']) {
+      expect(block(read(page)), page).toBe('');
+    }
+  });
+});

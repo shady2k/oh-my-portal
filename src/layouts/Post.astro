@@ -5,6 +5,7 @@ import Author from '../components/Author.astro';
 import Core from '../components/Core.astro';
 import Share from '../components/Share.astro';
 import Subscribe from '../components/Subscribe.astro';
+import PageJump from '../components/ui/PageJump.astro';
 import Tag from '../components/Tag.astro';
 import { twinHash } from '../history.ts';
 import { linkAttrs } from '../links.ts';
@@ -159,8 +160,11 @@ const project = data.project ? (await listProjects()).find((entry) => entry.id =
     is, and the two articles either side of it. The provenance link is small on
     purpose — it is for the reader who wants to check, not a claim shouted at
     everyone else.
+
+    It is also where ↓ in PageJump.astro lands: "the end" is where the text stops
+    and what-next begins, not the footer. The colon keeps headings off the id.
   */}
-  <nav class="after-nav" aria-label="соседние записи">
+  <nav class="after-nav" id="page:end" aria-label="соседние записи">
     <p class="provenance-link">
       <a href={`/posts/${post.id}/integrity/`}>провенанс · sha256 {hash}…</a>
     </p>
@@ -184,6 +188,8 @@ const project = data.project ? (await listProjects()).find((entry) => entry.id =
   <Author />
   <Subscribe />
   </div>
+  {/* Outside the article grid: it is fixed to the viewport and takes no cell. */}
+  <PageJump />
 </Base>
 
 <script>

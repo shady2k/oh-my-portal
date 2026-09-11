@@ -168,7 +168,9 @@ const sections = [
   <body>
     <a class="skip utility" href="#main">к содержанию</a>
 
-    <header class="frame site-header">
+    {/* ↑ in PageJump.astro lands here. A colon in the id because the heading
+        slugger strips it, so no article heading can ever take this id. */}
+    <header class="frame site-header" id="page:top">
       <a class="wordmark" href="/">
         {/* alt="" because the name follows it inside the same link. */}
         {author?.icon && <img class="wordmark-icon" src={author.icon} alt="" width="28" height="28" />}

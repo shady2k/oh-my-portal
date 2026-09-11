@@ -1,0 +1,117 @@
+---
+/*
+ * ↑ to the site header and ↓ to the neighbours block, floating at the bottom
+ * right of a long article. Both targets live in the layouts (`page:top` in
+ * Base.astro, `page:end` in Post.astro).
+ *
+ * Plain fragment links, and the jump is instant. The address gains the fragment,
+ * so Back returns the reader to where they were — half the point of ↑. Smooth
+ * scrolling over fifty screens is slow, and a reader who asked for less motion
+ * must not get it.
+ */
+---
+
+<nav class="page-jump" aria-label="по статье" hidden data-pagefind-ignore>
+  <a href="#page:top" data-jump="up" class="off" aria-label="наверх" title="наверх">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>
+  </a>
+  <a href="#page:end" data-jump="down" class="off" aria-label="в конец статьи" title="в конец статьи">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6" /></svg>
+  </a>
+</nav>
+
+<script>
+  /*
+   * Each control shows only while it is useful: ↑ once the article's header has
+   * left the screen, ↓ until the neighbours block arrives. An article whose
+   * header and end share a screen shows neither, so the threshold is the page
+   * itself rather than a word count someone has to maintain.
+   *
+   * Observers rather than a scroll handler: the browser reports the two
+   * crossings and nothing runs in between. Without them — or without JavaScript
+   * — the block stays hidden and the page is what it was before.
+   */
+  const jump = document.querySelector<HTMLElement>('.page-jump');
+  const start = document.querySelector('.journal-page > article > header');
+  const end = document.getElementById('page:end');
+  if (jump && start && end && 'IntersectionObserver' in window) {
+    const watch = (target: Element, control: Element) =>
+      new IntersectionObserver((entries) => {
+        control.classList.toggle('off', entries[entries.length - 1]!.isIntersecting);
+      }).observe(target);
+    watch(start, jump.querySelector('[data-jump="up"]')!);
+    watch(end, jump.querySelector('[data-jump="down"]')!);
+    jump.hidden = false;
+  }
+</script>
+
+<style>
+  /*
+   * Bottom right of the frame rather than of the window, so on a wide monitor
+   * the control stays beside the text it moves through. The inset is exactly
+   * the margin .frame leaves — (viewport − frame width) / 2, never less than
+   * --space-3 — and the safe-area terms keep it off a phone's gesture bar.
+   */
+  .page-jump {
+    position: fixed;
+    z-index: 1;
+    inset-block-end: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    inset-inline-end: calc((100% - min(100% - 2 * var(--space-3), var(--frame))) / 2 + env(safe-area-inset-right, 0px));
+    display: grid;
+    grid-template-rows: 2.75rem 2.75rem;
+  }
+
+  .page-jump[hidden] {
+    display: none;
+  }
+
+  /* The masthead's and the theme picker's tap target, in .ui-button's clothes:
+     a rule, a paper ground, square corners, no shadow. */
+  a {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink-quiet);
+    transition: opacity 150ms, visibility 150ms;
+  }
+
+  /* One rule between the two; a control left alone still has all four sides. */
+  a + a {
+    margin-block-start: -1px;
+  }
+
+  a:hover {
+    color: var(--ink);
+    background: var(--paper-sunk);
+  }
+
+  /*
+   * Out of use, a control keeps its slot, so a tap at the moment one disappears
+   * cannot land on the other. visibility also takes it out of the tab order and
+   * the accessibility tree.
+   */
+  a.off {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  svg {
+    inline-size: 1rem;
+    block-size: 1rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    a {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .page-jump {
+      display: none;
+    }
+  }
+</style>

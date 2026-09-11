@@ -20,6 +20,7 @@ catalog can be built with `UI_KIT=1 npm run build:examples`.
 | `EditorialNote.astro` | Quiet note or red-barred authored observation, label and body slot |
 | `SiteFooter.astro` | Configured author, build year, about, contact and RSS; no invented license |
 | `ImageViewer.astro` | One native dialog in Base, opened by image links; close, Escape, backdrop, focus restoration |
+| `PageJump.astro` | ↑ to the site header and ↓ to the neighbours block on an article; each shows only while useful; plain fragment links, instant jump; hidden without JS |
 | `../ExperimentSketch.astro` | The drawing, authored annotations and image-viewer triggers; original-image fallback |
 | `../ExperimentTrail.astro` | Done/current/next stages with published evidence links |
 | `../Tag.astro` | Underlined topic word; optional count and active state |

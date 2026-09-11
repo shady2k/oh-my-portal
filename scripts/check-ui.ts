@@ -124,6 +124,95 @@ try {
     console.log(`Frame, modal, focus and dismissal: ${width}px`);
   }
 
+  // Page jump: each control shows only while it is useful, the jumps are plain
+  // fragments so Back returns to the reading place, and a short article shows
+  // neither control.
+  {
+    const settled = (up: boolean, down: boolean, why: string) =>
+      page.waitForFunction(([u, d]) => {
+        const shows = (name: string) => getComputedStyle(document.querySelector(`[data-jump="${name}"]`)!).visibility === 'visible';
+        return shows('up') === u && shows('down') === d;
+      }, [up, down], { timeout: 2000 }).catch(() => { throw new Error(`page jump: ${why}`); });
+    const article = '/posts/scheduled-volume-backups/';
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(base + article, { waitUntil: 'networkidle' });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${article} at ${width}: no overflow`);
+      if (width === 1440) {
+        const edge = await page.evaluate(() => ({
+          jump: document.querySelector('.page-jump')!.getBoundingClientRect().right,
+          frame: document.querySelector('main')!.getBoundingClientRect().right,
+        }));
+        assert.ok(edge.jump <= edge.frame + 1, 'page jump stays inside the frame on a wide screen');
+      }
+      if (width === 390) {
+        // On a narrow screen the inset is the frame's own margin, --space-3.
+        // clientWidth, not innerWidth: the fixed control's 100% excludes a
+        // classic scrollbar, and innerWidth includes it.
+        const inset = await page.evaluate(() => document.documentElement.clientWidth - document.querySelector('.page-jump')!.getBoundingClientRect().right);
+        assert.ok(Math.abs(inset - 24) <= 1, `page jump sits 1.5rem from the edge at 390 (got ${inset}px)`);
+      }
+    }
+
+    await page.setViewportSize({ width: 390, height: 600 });
+    await page.goto(base + article, { waitUntil: 'networkidle' });
+    const end = await page.evaluate(() => document.getElementById('page:end')!.getBoundingClientRect().top + scrollY);
+    assert.ok(end > 600 * 3, 'the long example article scrolls several screens before its end');
+    assert.equal(await page.locator('.page-jump').evaluate((nav: HTMLElement) => nav.hidden), false, 'the script reveals the page jump');
+    await settled(false, true, 'at the top only ↓ shows');
+    assert.equal(
+      await page.locator('[data-jump="up"]').evaluate((a: HTMLElement) => { a.focus(); return document.activeElement === a; }),
+      false,
+      'a hidden control takes no focus',
+    );
+
+    await page.evaluate((y) => scrollTo(0, y), Math.round(end / 2));
+    await settled(true, true, 'midway both show');
+    const reading = await page.evaluate(() => scrollY);
+    await page.locator('[data-jump="down"]').click();
+    assert.equal(new URL(page.url()).hash, '#page:end', '↓ is a plain fragment link');
+    assert.ok(
+      await page.evaluate(() => { const r = document.getElementById('page:end')!.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }),
+      '↓ brings the neighbours block into view',
+    );
+    await settled(true, false, 'at the end only ↑ shows');
+    await page.evaluate(() => history.back());
+    await page.waitForFunction((y) => Math.abs(scrollY - y) <= 2, reading, { timeout: 2000 });
+    await page.locator('[data-jump="up"]').click();
+    await page.waitForFunction(() => scrollY === 0, null, { timeout: 2000 });
+
+    // A link into the end of an article: the browser scrolls to the fragment on
+    // load, before the script runs, and the controls must still settle right.
+    await page.goto(base + article + '#page:end', { waitUntil: 'networkidle' });
+    assert.ok(
+      await page.evaluate(() => { const r = document.getElementById('page:end')!.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }),
+      'a direct load with #page:end opens at the end block',
+    );
+    await settled(true, false, 'a direct load with #page:end shows only ↑');
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const name of ['up', 'down']) {
+      assert.equal(await page.locator(`[data-jump="${name}"]`).evaluate((a) => getComputedStyle(a).transitionDuration), '0s', `reduced motion: no fade on ${name}`);
+    }
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+    // The short article must really be short, or "shows neither" proves nothing.
+    // Raise the viewport rather than trust a guess about where its end falls.
+    const short = '/posts/memory-reset-check/';
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(base + short, { waitUntil: 'networkidle' });
+    const reach = await page.evaluate(() => document.getElementById('page:end')!.getBoundingClientRect().top);
+    assert.ok(reach < 2000, `${short} is short enough to test`);
+    if (reach >= 900) {
+      await page.setViewportSize({ width: 1440, height: Math.ceil(reach) + 40 });
+    }
+    await settled(false, false, 'a short article shows neither control');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    console.log('Page jump: visibility, fragments, Back, frame edge, reduced motion');
+  }
+
   // Measure after fonts settle: typing must never move the content below it.
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(base + '/', { waitUntil: 'networkidle' });
@@ -151,6 +240,8 @@ try {
   assert.equal(new URL(plain.url()).pathname, imageUrl, 'no-JS opens original image');
   await plain.goto(base + '/');
   assert.equal(await plain.locator('[data-typed-text]').textContent(), headline, 'no-JS heading is complete');
+  await plain.goto(base + '/posts/scheduled-volume-backups/');
+  assert.notEqual(await plain.locator('.page-jump').getAttribute('hidden'), null, 'no-JS keeps the page jump hidden');
   assert.equal((await plain.request.get(base + '/rss/index.xml')).status(), 200);
   assert.deepEqual(errors, [], 'no browser errors');
   if (screenshots && (await page.request.get(base + '/_ui/')).status() === 200) {
