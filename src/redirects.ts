@@ -82,18 +82,67 @@ export function validate({ redirects, unchanged }: ParsedMap): string[] {
     else seen.set(from, section);
   }
 
-  // One hop: a target must not itself be a source that moves. A target that is
-  // an *unchanged* address is correct — that is where the traffic should land.
+  // `moves` stays for the exemption check below. The one-hop rule that used to
+  // live here is `flatten()`'s now: a chain became the normal shape of a rename
+  // once aliases existed, so it is resolved rather than refused.
   const moves = new Set(redirects.map((r) => r.from));
-  for (const { from, to } of redirects) {
-    if (moves.has(to)) problems.push(`chain: \`${from}\` -> \`${to}\`, and \`${to}\` is itself redirected`);
-  }
 
   for (const path of EXEMPT) {
     if (moves.has(path)) problems.push(`\`${path}\` must never be redirected (design §5, R2)`);
   }
 
   return problems;
+}
+
+/**
+ * Aliases are a second source for the same map.
+ *
+ * The migration map is a closed set from a one-time import; a rename that
+ * happens afterwards records its old address in the article's own frontmatter
+ * instead. Both end up in one list so that `validate()` sees them together — the
+ * "mapped twice" rule is only meaningful across every source at once, and
+ * checking each alone would let an alias silently shadow a migration entry.
+ */
+export function mergeAliases(map: ParsedMap, aliases: Redirect[]): ParsedMap {
+  return {
+    redirects: [...map.redirects, ...aliases.filter((a) => a.from !== a.to)],
+    unchanged: [...map.unchanged, ...aliases.filter((a) => a.from === a.to)],
+  };
+}
+
+/**
+ * One hop, by construction: every target is followed to where it finally lands.
+ *
+ * A chain used to be an error, which was right while the map was the only
+ * source. With aliases it is the normal shape of a rename — every imported
+ * article already has an old address pointing at it — and refusing it would
+ * make the frozen map the only place a rename could be fixed. A cycle has no
+ * final address and stays an error.
+ */
+export function flatten(redirects: Redirect[]): { redirects: Redirect[]; problems: string[] } {
+  const next = new Map(redirects.map((r) => [r.from, r.to]));
+  const problems: string[] = [];
+  const out: Redirect[] = [];
+  for (const r of redirects) {
+    const path = [r.from];
+    let to = r.to;
+    while (next.has(to)) {
+      if (path.includes(to)) {
+        problems.push(`cycle: ${[...path, to].map((p) => `\`${p}\``).join(' -> ')}`);
+        break;
+      }
+      path.push(to);
+      to = next.get(to)!;
+    }
+    out.push({ ...r, to });
+  }
+  return { redirects: out, problems };
+}
+
+/** Old addresses the map does not mention — design §5's exhaustiveness. */
+export function uncovered({ redirects, unchanged }: ParsedMap, addresses: string[]): string[] {
+  const covered = new Set([...redirects, ...unchanged].map((r) => r.from));
+  return addresses.filter((a) => a && !EXEMPT.includes(a) && !covered.has(a));
 }
 
 /**

@@ -1,6 +1,20 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { EXEMPT, againstBuild, expand, render, renderS3, validate } from '../src/redirects.ts';
+import { collectAliases } from '../scripts/collect-aliases.ts';
+import {
+  EXEMPT,
+  againstBuild,
+  expand,
+  flatten,
+  mergeAliases,
+  render,
+  renderS3,
+  uncovered,
+  validate,
+} from '../src/redirects.ts';
 
 /**
  * The library, against a fixture.
@@ -84,9 +98,8 @@ describe('a well-formed map', () => {
 describe('validate', () => {
   const problemsFor = (yaml: string) => validate(expand(yaml));
 
-  it('catches a chain', () => {
-    const problems = problemsFor('pages:\n  /a/: /b/\n  /b/: /c/\n');
-    expect(problems).toContainEqual(expect.stringContaining('chain'));
+  it('leaves chains to flatten()', () => {
+    expect(problemsFor('pages:\n  /a/: /b/\n  /b/: /c/\n')).toEqual([]);
   });
 
   it('catches an address mapped twice', () => {
@@ -183,5 +196,83 @@ describe('againstBuild', () => {
     const { live, held } = againstBuild([r('/old/', '/posts/a-draft/')], serves);
     expect(live).toEqual([]);
     expect(held).toEqual([r('/old/', '/posts/a-draft/')]);
+  });
+});
+
+const alias = (from: string, slug: string) => ({
+  from,
+  to: `/posts/${slug}/`,
+  section: `aliases:${slug}`,
+});
+
+describe('mergeAliases', () => {
+  it('adds an alias to the redirects, so a rename resolves', () => {
+    const merged = mergeAliases(expand('posts: {}'), [alias('/old-name/', 'new-name')]);
+    expect(merged.redirects).toContainEqual(alias('/old-name/', 'new-name'));
+  });
+
+  it('reports an alias that collides with the migration map', () => {
+    const problems = validate(mergeAliases(expand('posts:\n  taken: somewhere\n'), [alias('/taken/', 'elsewhere')]));
+    expect(problems.join('\n')).toMatch(/`\/taken\/` is mapped twice/);
+  });
+
+  it('reports the same alias claimed by two articles', () => {
+    const problems = validate(
+      mergeAliases(expand('posts: {}'), [alias('/shared/', 'one'), alias('/shared/', 'two')]),
+    );
+    expect(problems.join('\n')).toMatch(/`\/shared\/` is mapped twice/);
+  });
+});
+
+describe('flatten', () => {
+  it('renames an article that already had an old address, one hop from both', () => {
+    const merged = mergeAliases(expand('posts:\n  staryi-slag: anytype\n'), [alias('/posts/anytype/', 'anytype-os')]);
+    expect(validate(merged)).toEqual([]);
+    const { redirects, problems } = flatten(merged.redirects);
+    expect(problems).toEqual([]);
+    expect(redirects).toEqual(
+      expect.arrayContaining([
+        { from: '/staryi-slag/', to: '/posts/anytype-os/', section: 'posts' },
+        alias('/posts/anytype/', 'anytype-os'),
+      ]),
+    );
+  });
+
+  it('reports a cycle, the one chain that cannot be flattened', () => {
+    const { problems } = flatten([
+      { from: '/a/', to: '/b/', section: 'pages' },
+      { from: '/b/', to: '/a/', section: 'pages' },
+    ]);
+    expect(problems.join('\n')).toMatch(/cycle/);
+  });
+});
+
+describe('uncovered', () => {
+  it('names an old address the map forgot', () => {
+    expect(uncovered(expand('pages:\n  /about/: /about/\n'), ['/about/', '/forgotten/'])).toEqual(['/forgotten/']);
+  });
+});
+
+describe('collectAliases', () => {
+  it("turns an article's aliases into redirects to its address", () => {
+    const dir = mkdtempSync(join(tmpdir(), 'aliases-'));
+    writeFileSync(
+      join(dir, 'renamed.md'),
+      `---
+title: Renamed
+slug: new-name
+date: 2026-01-01
+kind: article
+status: published
+author: human
+summary: One sentence.
+tags: []
+lang: ru
+aliases: [/posts/old-name/]
+---
+Body.
+`,
+    );
+    expect(collectAliases(dir)).toEqual([alias('/posts/old-name/', 'new-name')]);
   });
 });

@@ -2,7 +2,8 @@
 /**
  * Turns a redirect map into something that serves it.
  *
- *   node scripts/gen-redirects.ts [--check] [--format nginx|s3] [--dist <build>] <map.yaml> <out>
+ *   node scripts/gen-redirects.ts [--check] [--format nginx|s3] [--dist <build>]
+ *                                [--coverage <old-addresses.txt>] <map.yaml> <out>
  *
  * `nginx` (the default) writes `location` blocks for whoever self-hosts behind
  * nginx. `s3` writes a JSON manifest of redirect objects for `deploy-s3.ts`,
@@ -19,13 +20,20 @@
  * held back and listed — see `againstBuild()`. Pass it whenever there is a
  * build; without it nothing knows which targets exist.
  *
+ * The map is not the only source: every `aliases` entry in the corpus feeds the
+ * same list, so a rename records its old address beside the article instead of
+ * in the frozen migration file. `--coverage` takes the old address list and
+ * fails if an address is in neither — the map's exhaustiveness, checked at the
+ * only place that can see both sources at once.
+ *
  * `--check` writes nothing and exits non-zero if the output on disk is stale.
  */
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
-import { againstBuild, expand, render, renderS3, validate } from '../src/redirects.ts';
+import { collectAliases } from './collect-aliases.ts';
+import { againstBuild, expand, flatten, mergeAliases, render, renderS3, uncovered, validate } from '../src/redirects.ts';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -33,13 +41,16 @@ const { values, positionals } = parseArgs({
     check: { type: 'boolean', default: false },
     format: { type: 'string', default: 'nginx' },
     dist: { type: 'string' },
+    coverage: { type: 'string' },
   },
 });
 const [source, out] = positionals;
-const { check, format, dist } = values;
+const { check, format, dist, coverage } = values;
 
 if (!source || !out || (format !== 'nginx' && format !== 's3')) {
-  console.error('usage: gen-redirects.ts [--check] [--format nginx|s3] [--dist <build>] <map.yaml> <out>');
+  console.error(
+    'usage: gen-redirects.ts [--check] [--format nginx|s3] [--dist <build>] [--coverage <old-addresses.txt>] <map.yaml> <out>',
+  );
   process.exit(2);
 }
 
@@ -50,10 +61,23 @@ const fail = (what: string, problems: string[]): never => {
 };
 
 const map = expand(readFileSync(source, 'utf8'));
-const problems = validate(map);
+
+if (coverage) {
+  const addresses = readFileSync(coverage, 'utf8')
+    .split('\n')
+    .map((s) => s.trim());
+  const missing = uncovered(map, addresses);
+  if (missing.length) fail(coverage, missing.map((a) => `\`${a}\` is an old address the map does not mention`));
+}
+
+const merged = mergeAliases(map, collectAliases(process.env.CONTENT_DIR ?? 'content/posts'));
+const problems = validate(merged);
 if (problems.length) fail(source, problems);
 
-let redirects = map.redirects;
+const flat = flatten(merged.redirects);
+if (flat.problems.length) fail(source, flat.problems);
+
+let redirects = flat.redirects;
 
 if (dist) {
   const serves = (path: string) => existsSync(join(dist, path, 'index.html'));
