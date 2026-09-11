@@ -225,7 +225,15 @@ for (const { key, location } of objects) {
  * Everything was uploaded a moment ago, so this pass transfers nothing; it
  * exists only for the removals.
  */
-const keep = ['rss/index.html', ...objects.map((o) => o.key)];
+/*
+ * `_astro/*` is spared too. Its names are content hashes, so an old stylesheet
+ * never collides with a new one and is only ever requested by old HTML — and old
+ * HTML outlives every deploy in some cache: a browser for the minutes SHORT
+ * allows, a CDN that ignores max-age for days. Deleting the previous build's
+ * hashed files turned a cached /archive/ into an unstyled page whose CSS answered
+ * 403. Keeping them costs a few kilobytes per deploy that changes a stylesheet.
+ */
+const keep = ['rss/index.html', '_astro/*', ...objects.map((o) => o.key)];
 console.log('\n→ удаление того, чего больше нет в сборке');
 aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete', ...keep.flatMap((k) => ['--exclude', k])]);
 

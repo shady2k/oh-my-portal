@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -8,6 +9,28 @@ import { describe, expect, it } from 'vitest';
  * where the keys are. A bare import would fail there; this fails here first,
  * and says why.
  */
+describe('the delete pass', () => {
+  /*
+   * A page's HTML outlives its deploy in every cache — a CDN, a browser — and
+   * that HTML links the previous build's hashed stylesheet. Deleting it turned a
+   * cached /archive/ into an unstyled page answering 403 for its CSS.
+   */
+  const syncLine = () =>
+    execFileSync('node', ['scripts/deploy-s3.ts', 'dist-that-is-not-read', 'example-bucket', '--dry-run'], {
+      encoding: 'utf8',
+    })
+      .split('\n')
+      .find((line) => line.includes(' s3 sync ')) ?? '';
+
+  it('keeps the hashed assets of earlier builds, which cached pages still link to', () => {
+    expect(syncLine()).toContain('--exclude _astro/*');
+  });
+
+  it('still removes everything else the build no longer contains', () => {
+    expect(syncLine()).toContain('--delete');
+  });
+});
+
 describe.each(['scripts/deploy-s3.ts', 'scripts/check-live.ts'])('%s', (file) => {
   it('imports only Node built-ins', () => {
     const source = readFileSync(file, 'utf8');
