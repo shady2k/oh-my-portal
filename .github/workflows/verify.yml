@@ -1,0 +1,40 @@
+name: verify
+
+# The engine's own gate: `astro check` and the test suite, which builds the
+# examples and checks the outputs.
+#
+# This repository has no deploy of its own — the site is built from a content
+# repository that checks *this* one out at a pinned commit (publishing design
+# §2, §8). So the one thing CI owes that arrangement is a release worth pinning:
+# the content repository's checks deliberately do not run these tests, on the
+# grounds that they test the pinned engine and were verified when it was
+# released. That reasoning only holds if something verifies it here.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A pull request that is pushed to twice only needs the second answer.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      # No content repository and no SITE_URL: the tests build `examples/`,
+      # which is what this repository carries instead of a site.
+      - run: npm ci
+
+      - run: npm run verify
