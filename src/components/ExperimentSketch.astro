@@ -78,15 +78,36 @@ const nodes = [
   .experiment-sketch { margin: 0; inline-size: 100%; }
   .illustrated { padding-block-end: 1.5rem; }
   .compact.illustrated { padding-block-end: 0; }
-  .compact .annotation { font-size: clamp(1.0625rem, 1.65vw, 1.3rem); }
-  .art-plane { position: relative; --paper: var(--illustration-paper); --accent: var(--illustration-accent); background: var(--paper); }
+  /*
+   * The notes are sized and placed against the drawing, never against the window.
+   *
+   * They used to take their font size from the viewport while the drawing took
+   * its width from its column, so a note that fit on a phone wrapped on a desktop
+   * where the compact drawing is ~400 px wide — and the bottom note, positioned
+   * from the top, grew its second line out of the drawing and over the link
+   * beneath it. Now the plane is a square sheet and a size container, and the
+   * notes are in `cqi`: the same text breaks the same way at every width, and
+   * a picture of any proportions is fitted onto the sheet rather than changing
+   * its height. Each note is anchored to the edge it sits against, so another
+   * line grows into the paper, not out of it; the top notes take at most three
+   * lines, the bottom one two, which is what the longest annotation the schema
+   * accepts needs. Past that the text ends in an ellipsis instead of spilling
+   * onto the drawing. check-ui tries that longest annotation on a wide picture
+   * and fails if a note leaves its band or loses a line.
+   */
+  .art-plane { position: relative; container-type: inline-size; --paper: var(--illustration-paper); --accent: var(--illustration-accent); background: var(--paper); }
+  .art-plane :global(img) { aspect-ratio: 1; object-fit: contain; }
   .art-link { display: block; background: var(--paper); cursor: zoom-in; }
   .art-link :global(img) { display: block; inline-size: 100%; block-size: auto; mix-blend-mode: multiply; }
   .annotation-arrows { position: absolute; inset: 0; inline-size: 100%; pointer-events: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round; }
-  .annotation { position: absolute; font-family: 'Journal Hand', cursive; font-size: clamp(1.15rem, 2vw, 1.6rem); font-weight: 500; color: var(--accent); line-height: 1; max-inline-size: 46%; pointer-events: none; }
-  .memory { inset-block-start: 3%; inset-inline-start: 2%; transform: rotate(-8deg); }
-  .growing { inset-block-start: 1%; inset-inline-start: 50%; transform: rotate(5deg); }
-  .gap { inset-block-start: 91%; inset-inline-start: 20%; max-inline-size: 75%; transform: rotate(-4deg); }
+  .annotation {
+    position: absolute; font-family: 'Journal Hand', cursive; font-size: 5cqi; font-weight: 500; line-height: 1.05;
+    color: var(--accent); max-inline-size: 44%; overflow-wrap: anywhere; pointer-events: none;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+  }
+  .memory { inset-block-start: 2%; inset-inline-start: 2%; transform: rotate(-5deg); }
+  .growing { inset-block-start: 2%; inset-inline-start: 52%; transform: rotate(4deg); }
+  .gap { inset-block-end: 2%; inset-inline-start: 12%; max-inline-size: 76%; -webkit-line-clamp: 2; line-clamp: 2; transform: rotate(-3deg); }
   .art-hint { display: block; text-align: center; font-size: 0.8125rem; color: var(--ink-quiet); margin-block-start: 0.5rem; }
   .art-hint a { display: inline-flex; align-items: center; gap: 0.375rem; padding-block: 0.25rem; }
   .art-hint .zoom-icon { flex: 0 0 auto; inline-size: 1rem; block-size: 1rem; }

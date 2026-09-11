@@ -43,6 +43,45 @@ try {
         assert.ok(Math.abs(current[0].bottom - theme) <= 1, `${route}: the section bar lines up with the theme bar`);
       }
     }
+    // Handwritten notes stay on the drawing, in their bands, whatever the text
+    // and whatever the picture — tried with the longest annotation the schema
+    // accepts (50 characters) on a picture three times wider than tall.
+    for (const route of ['/', '/projects/']) {
+      await page.goto(base + route, { waitUntil: 'networkidle' });
+      const wide = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100"><rect width="300" height="100" fill="#ccc"/></svg>');
+      await page.locator('.art-plane img').first().evaluate((img: HTMLImageElement, src) => {
+        img.removeAttribute('srcset');
+        img.src = src;
+        return img.decode();
+      }, wide);
+      const drawing = await page.evaluate(() => {
+        const longest = 'длинная пометка на полях рисунка про самое главное'.slice(0, 50);
+        const plane = document.querySelector('.art-plane');
+        if (!plane) return null;
+        plane.querySelectorAll<HTMLElement>('.annotation').forEach((note) => { note.textContent = longest; });
+        const box = plane.getBoundingClientRect();
+        return { square: Math.abs(box.width - box.height) <= 1, notes: [...plane.querySelectorAll<HTMLElement>('.annotation')].map((note, index) => {
+          const r = note.getBoundingClientRect();
+          return {
+            index,
+            inside: r.left >= box.left - 1 && r.right <= box.right + 1 && r.top >= box.top - 1 && r.bottom <= box.bottom + 1,
+            topBand: r.bottom <= box.top + box.height * 0.25,
+            bottomBand: r.top >= box.top + box.height * 0.75,
+            // Handwriting ink always pokes a few pixels past its line box; a
+            // clipped note is one whose box hides at least half a line.
+            clipped: getComputedStyle(note).overflow !== 'visible' && note.scrollHeight - note.clientHeight > parseFloat(getComputedStyle(note).lineHeight) / 2,
+          };
+        }) };
+      });
+      assert.ok(drawing && drawing.notes.length === 3, `${route}: the drawing has three notes to check`);
+      assert.ok(drawing.square, `${route} at ${width}: the drawing keeps its square sheet whatever the picture`);
+      for (const note of drawing.notes) {
+        assert.ok(note.inside, `${route} at ${width}: note ${note.index} stays inside the drawing`);
+        assert.ok(note.index < 2 ? note.topBand : note.bottomBand, `${route} at ${width}: note ${note.index} stays in its band`);
+        assert.equal(note.clipped, false, `${route} at ${width}: note ${note.index} is not clipped`);
+      }
+    }
+
     // A link that leaves the site says so with an arrow; one that stays does not.
     await page.goto(base + '/about/', { waitUntil: 'networkidle' });
     const arrows = await page.evaluate(() => [...document.querySelectorAll('main a[href]')].map((a) => ({
