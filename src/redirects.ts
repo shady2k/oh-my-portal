@@ -6,8 +6,9 @@ import { parse as parseYaml } from 'yaml';
  *
  * Astro's own `redirects` config is not used: in a static build it emits
  * meta-refresh HTML and, in Astro's words, "the status code is not used by the
- * server". So the map is data and this module turns it into nginx
- * configuration — real 301s, one source of truth.
+ * server". So the map is data and this module turns it into real 301s, one
+ * source of truth for two deploys: nginx configuration for a server, and
+ * redirect objects for object storage, which has none.
  */
 
 export type Redirect = {
@@ -129,4 +130,69 @@ export function render(redirects: Redirect[], source: string): string {
   }
   out.push('');
   return out.join('\n');
+}
+
+/** One object in storage whose only job is to answer an old address with a 301. */
+export type RedirectObject = { key: string; location: string };
+
+/**
+ * Sorts redirects against what a build actually serves.
+ *
+ * `validate()` checks the sources of the map against each other and against
+ * nothing else. Two things only the build can answer:
+ *
+ * - A source the build serves is a live page. Its redirect object is uploaded
+ *   over it and the page becomes a 301 — from a typo in the map, or from one
+ *   `aliases` line in an article, which is a file an agent may write. So it is
+ *   an error, not a warning.
+ * - A target the build does not serve — a draft, most often — would be a 301
+ *   into a 404 that also names the unpublished slug. It is held back and
+ *   listed, and appears on its own in the first build that publishes the target.
+ */
+export function againstBuild(
+  redirects: Redirect[],
+  serves: (path: string) => boolean,
+): { live: Redirect[]; held: Redirect[]; problems: string[] } {
+  const live: Redirect[] = [];
+  const held: Redirect[] = [];
+  const problems: string[] = [];
+  for (const r of redirects) {
+    if (serves(r.from)) {
+      problems.push(`${r.section}: \`${r.from}\` is a page in this build, and its redirect would overwrite it`);
+    } else if (!serves(r.to)) {
+      held.push(r);
+    } else {
+      live.push(r);
+    }
+  }
+  return { live, held, problems };
+}
+
+/**
+ * The same map as `render()`, for a deploy that has no server.
+ *
+ * Object storage answers a redirect out of an object's own metadata
+ * (`x-amz-website-redirect-location`), so each old address becomes a zero-byte
+ * object. Two of them, and that is the whole subtlety: the index resolver turns
+ * `/old/` into the key `old/index.html`, but a request for `/old` without the
+ * trailing slash gets a **302** to `/old/` first — two hops, the first of them a
+ * 302, which is exactly what R1 forbids. A bare key alongside it answers that
+ * form directly with a 301. Measured, both ways, before this was written.
+ *
+ * The site root is refused rather than handled: its key would be `index.html`,
+ * and a redirect map that silently overwrites the front page is worse than one
+ * that fails. `againstBuild()` already refuses it; this is the last line.
+ */
+export function renderS3(redirects: Redirect[]): RedirectObject[] {
+  const out: RedirectObject[] = [];
+  const ordered = [...redirects].sort((a, b) => a.from.localeCompare(b.from));
+  for (const { from, to } of ordered) {
+    if (from === '/') {
+      throw new Error('the site root cannot be a redirect source: its key would overwrite index.html');
+    }
+    const bare = from.replace(/^\//, '').replace(/\/$/, '');
+    out.push({ key: `${bare}/index.html`, location: to });
+    out.push({ key: bare, location: to });
+  }
+  return out;
 }

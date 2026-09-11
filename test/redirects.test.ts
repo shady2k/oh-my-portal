@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { EXEMPT, expand, render, validate } from '../src/redirects.ts';
+import { EXEMPT, againstBuild, expand, render, renderS3, validate } from '../src/redirects.ts';
 
 /**
  * The library, against a fixture.
@@ -138,5 +138,50 @@ describe('nginx output', () => {
   it('names its source, so the generated file cannot be mistaken for a hand-edited one', () => {
     expect(conf).toContain('Generated from fixture');
     expect(conf).toContain('DO NOT EDIT');
+  });
+});
+
+describe('renderS3', () => {
+  const moved = expand(`
+posts:
+  old-address: new-address
+`);
+
+  it('emits both the slashed and the bare key for every redirect', () => {
+    expect(renderS3(moved.redirects)).toEqual([
+      { key: 'old-address/index.html', location: '/posts/new-address/' },
+      { key: 'old-address', location: '/posts/new-address/' },
+    ]);
+  });
+
+  it('refuses the site root, whose key would overwrite the front page', () => {
+    expect(() => renderS3([{ from: '/', to: '/posts/x/', section: 'pages' }])).toThrow(
+      /root cannot be a redirect source/,
+    );
+  });
+});
+
+describe('againstBuild', () => {
+  const built = new Set(['/', '/archive/', '/posts/new-address/']);
+  const serves = (path: string) => built.has(path);
+  const r = (from: string, to: string) => ({ from, to, section: 'pages' });
+
+  it('lets through a redirect from a vacant address to a built page', () => {
+    expect(againstBuild([r('/old/', '/posts/new-address/')], serves)).toEqual({
+      live: [r('/old/', '/posts/new-address/')],
+      held: [],
+      problems: [],
+    });
+  });
+
+  it('refuses a source the build serves, because its object would overwrite the page', () => {
+    const { problems } = againstBuild([r('/archive/', '/posts/new-address/')], serves);
+    expect(problems.join('\n')).toMatch(/`\/archive\/` is a page in this build/);
+  });
+
+  it('holds back a redirect whose target is not built, a draft most often', () => {
+    const { live, held } = againstBuild([r('/old/', '/posts/a-draft/')], serves);
+    expect(live).toEqual([]);
+    expect(held).toEqual([r('/old/', '/posts/a-draft/')]);
   });
 });

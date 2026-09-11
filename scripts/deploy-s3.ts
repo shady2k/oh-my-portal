@@ -2,7 +2,10 @@
 /**
  * Publish a build to S3-compatible object storage behind a CDN.
  *
- *   node scripts/deploy-s3.ts <dist> <bucket> [--endpoint URL] [--dry-run]
+ *   node scripts/deploy-s3.ts <dist> <bucket> [--endpoint URL] [--redirects <manifest.json>] [--dry-run]
+ *
+ * `--redirects` takes the manifest `gen-redirects.ts --format s3` writes: the
+ * old addresses, uploaded as zero-byte redirect objects.
  *
  * Credentials come from the environment the AWS CLI already reads
  * (`AWS_PROFILE`, or the access key pair). Nothing site-specific is written
@@ -15,9 +18,8 @@
  *
  * 1. **`Cache-Control` per kind of file.** The CDN is configured to respect the
  *    origin's header, so whatever is set here IS the cache policy. HTML and the
- *    twins get minutes — a new article has to appear promptly. Images, fonts
- *    and stylesheets get a month, because their content decides their name or
- *    they never change.
+ *    twins get minutes — a new article has to appear promptly. Only `_astro/`
+ *    gets a month, because only there does the content decide the name.
  * 2. **`Content-Type` for `.md`.** No standard mime table has it, so the CLI
  *    would ship the markdown twins as `application/octet-stream` and every
  *    Cyrillic twin would arrive as mojibake. That failure is invisible in a
@@ -35,15 +37,23 @@
  * the front page: measured, not assumed — see `br` issue vk-hosting-findings.
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { parseArgs } from 'node:util';
 
-const argv = process.argv.slice(2);
-const dryRun = argv.includes('--dry-run');
-const endpointAt = argv.indexOf('--endpoint');
-const endpoint = endpointAt === -1 ? undefined : argv[endpointAt + 1];
-const [dist, bucket] = argv.filter((a, i) => !a.startsWith('--') && i !== endpointAt + 1);
+const { values, positionals } = parseArgs({
+  allowPositionals: true,
+  options: {
+    endpoint: { type: 'string' },
+    redirects: { type: 'string' },
+    'dry-run': { type: 'boolean', default: false },
+  },
+});
+const [dist, bucket] = positionals;
+const { endpoint, redirects: manifest } = values;
+const dryRun = values['dry-run'];
 
 if (!dist || !bucket) {
-  console.error('usage: deploy-s3.ts <dist> <bucket> [--endpoint URL] [--dry-run]');
+  console.error('usage: deploy-s3.ts <dist> <bucket> [--endpoint URL] [--redirects <manifest.json>] [--dry-run]');
   process.exit(2);
 }
 
@@ -90,8 +100,15 @@ const passes: Pass[] = [
     cacheControl: SHORT,
   },
   {
-    what: 'картинки, шрифты, стили и скрипты',
-    include: ['*.webp', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.svg', '*.avif', '*.woff2', '*.woff', '*.css', '*.js'],
+    /*
+     * `_astro/` and nothing else. Its names are content hashes, so a month of
+     * `immutable` is safe there. Content images, `og.png`, the favicon and
+     * Pagefind's loader keep their names when they change: a month on them is a
+     * month of a replaced picture nobody can see, and the pipeline has no purge
+     * step to fix it. They stay on the first pass's SHORT.
+     */
+    what: 'хэшированные ассеты сборки',
+    include: ['_astro/*'],
     cacheControl: LONG,
   },
   {
@@ -171,21 +188,46 @@ for (const pass of passes) {
 }
 
 /*
- * Anything the build no longer contains. Last, and on its own: a removal that
- * races an upload is a 404 for a page that exists in both versions.
+ * The old addresses, as objects — before the delete pass, and excluded from it.
+ *
+ * These keys are not in `dist`, so a `sync --delete` removes every one of them.
+ * Uploading them afterwards is not enough: between the delete and the re-upload
+ * every old address answers 403, on every deploy, for as long as the uploads
+ * take. So the delete pass is told to leave them alone, and a redirect that has
+ * left the manifest — an alias removed — is not excluded and goes, as it should.
  */
+const objects: { key: string; location: string }[] = manifest
+  ? JSON.parse(readFileSync(manifest, 'utf8'))
+  : [];
+if (objects.length) console.log(`\n→ редиректы старых адресов: ${objects.length} объектов`);
+for (const { key, location } of objects) {
+  aws([
+    's3api', 'put-object',
+    '--bucket', bucket,
+    '--key', key,
+    '--acl', 'public-read',
+    '--website-redirect-location', location,
+    '--cache-control', SHORT,
+  ]);
+}
+
 /*
- * No `--exclude` here, and that was a bug worth writing down: the CLI's filters
- * apply to the destination as well as the source, so `--delete --exclude '*'`
- * reads as "delete the things I just told you to ignore" and removes nothing at
- * all. Stale hashed stylesheets and files from an earlier experiment sat in the
- * bucket through several deploys while this line looked like it was cleaning up.
+ * Anything the build no longer contains. After the uploads, and on its own: a
+ * removal that races an upload is a 404 for a page that exists in both versions.
+ *
+ * The CLI's filters apply to the destination as well as the source. That was
+ * once a bug here — `--delete --exclude '*'` reads as "delete the things I just
+ * told you to ignore" and removed nothing at all, while stale files sat in the
+ * bucket through several deploys. The same rule is what spares the keys below:
+ * each `--exclude` names an object this deploy put in the bucket on purpose and
+ * that `dist` does not contain.
  *
  * Everything was uploaded a moment ago, so this pass transfers nothing; it
  * exists only for the removals.
  */
+const keep = ['rss/index.html', ...objects.map((o) => o.key)];
 console.log('\n→ удаление того, чего больше нет в сборке');
-aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete']);
+aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete', ...keep.flatMap((k) => ['--exclude', k])]);
 
 /*
  * R2: `/rss/` serves the feed at the address it has always had, and NOT through
@@ -201,8 +243,9 @@ aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete']);
  * what the metadata says, not what the extension suggests, and this is the one
  * place in the deploy where those two disagree on purpose.
  *
- * After the delete pass, deliberately: this key is not in `dist`, so a sync
- * with `--delete` running afterwards would remove it every single time.
+ * The key is not in `dist`, so the delete pass above is told to spare it — without
+ * that, every deploy removed the feed and put it back, and for the seconds in
+ * between every subscriber's reader got a 404.
  */
 console.log('\n→ /rss/ под именем, которое ищет резолвер индекса');
 aws([
