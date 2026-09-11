@@ -41,6 +41,20 @@
       }).observe(target);
     watch(start, jump.querySelector('[data-jump="up"]')!);
     watch(end, jump.querySelector('[data-jump="down"]')!);
+
+    /*
+     * At the very bottom of the page the site footer fills the foot of the
+     * window, and it is not part of main, so the control rides the footer's
+     * height higher. Measured rather than guessed: the footer's height depends on
+     * its content and on whether its links wrap. Set once before the control
+     * appears, then kept current as the footer reflows.
+     */
+    const footer = document.querySelector<HTMLElement>('.site-footer');
+    if (footer) {
+      const clear = () => jump.style.setProperty('--footer-clearance', `${footer.offsetHeight}px`);
+      clear();
+      if ('ResizeObserver' in window) new ResizeObserver(clear).observe(footer);
+    }
     jump.hidden = false;
   }
 </script>
@@ -51,11 +65,15 @@
    * the control stays beside the text it moves through. The inset is exactly
    * the margin .frame leaves — (viewport − frame width) / 2, never less than
    * --space-3 — and the safe-area terms keep it off a phone's gesture bar.
+   *
+   * Upwards it clears the site footer: --footer-clearance is the footer's height,
+   * which the script measures, so both slots sit above the footer's rule when the
+   * page is scrolled to the very bottom.
    */
   .page-jump {
     position: fixed;
     z-index: 1;
-    inset-block-end: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    inset-block-end: calc(var(--footer-clearance, 0px) + var(--space-3) + env(safe-area-inset-bottom, 0px));
     inset-inline-end: calc((100% - min(100% - 2 * var(--space-3), var(--frame))) / 2 + env(safe-area-inset-right, 0px));
     display: grid;
     grid-template-rows: 2.75rem 2.75rem;

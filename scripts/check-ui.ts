@@ -154,6 +154,20 @@ try {
         const inset = await page.evaluate(() => document.documentElement.clientWidth - document.querySelector('.page-jump')!.getBoundingClientRect().right);
         assert.ok(Math.abs(inset - 24) <= 1, `page jump sits 1.5rem from the edge at 390 (got ${inset}px)`);
       }
+      // At the very bottom the footer fills the foot of the window, and it is not
+      // part of main: the whole control, both slots, must still sit above it.
+      await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForFunction(() => {
+        const jump = document.querySelector('.page-jump')!.getBoundingClientRect();
+        const footer = document.querySelector('.site-footer')!.getBoundingClientRect();
+        return footer.top < innerHeight && jump.bottom <= footer.top;
+      }, null, { timeout: 2000 }).catch(async () => {
+        const got = await page.evaluate(() => ({
+          jump: document.querySelector('.page-jump')!.getBoundingClientRect().bottom,
+          footer: document.querySelector('.site-footer')!.getBoundingClientRect().top,
+        }));
+        throw new Error(`page jump at ${width}: the control ends at ${got.jump}px, below the footer's top at ${got.footer}px`);
+      });
     }
 
     await page.setViewportSize({ width: 390, height: 600 });
