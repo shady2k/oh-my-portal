@@ -136,23 +136,24 @@ try {
     const article = '/posts/scheduled-volume-backups/';
 
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    for (const width of [1440, 390, 320]) {
+    for (const width of [1440, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(base + article, { waitUntil: 'networkidle' });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${article} at ${width}: no overflow`);
+      if (width <= 768) {
+        assert.equal(
+          await page.locator('.page-jump').evaluate((nav) => getComputedStyle(nav).display),
+          'none',
+          `page jump stays out of the reading column at ${width}px`,
+        );
+        continue;
+      }
       if (width === 1440) {
         const edge = await page.evaluate(() => ({
           jump: document.querySelector('.page-jump')!.getBoundingClientRect().right,
           frame: document.querySelector('main')!.getBoundingClientRect().right,
         }));
         assert.ok(edge.jump <= edge.frame + 1, 'page jump stays inside the frame on a wide screen');
-      }
-      if (width === 390) {
-        // On a narrow screen the inset is the frame's own margin, --space-3.
-        // clientWidth, not innerWidth: the fixed control's 100% excludes a
-        // classic scrollbar, and innerWidth includes it.
-        const inset = await page.evaluate(() => document.documentElement.clientWidth - document.querySelector('.page-jump')!.getBoundingClientRect().right);
-        assert.ok(Math.abs(inset - 24) <= 1, `page jump sits 1.5rem from the edge at 390 (got ${inset}px)`);
       }
       // At the very bottom the footer fills the foot of the window, and it is not
       // part of main: the whole control, both slots, must still sit above it.
@@ -170,7 +171,7 @@ try {
       });
     }
 
-    await page.setViewportSize({ width: 390, height: 600 });
+    await page.setViewportSize({ width: 1440, height: 600 });
     await page.goto(base + article, { waitUntil: 'networkidle' });
     const end = await page.evaluate(() => document.getElementById('page:end')!.getBoundingClientRect().top + scrollY);
     assert.ok(end > 600 * 3, 'the long example article scrolls several screens before its end');
@@ -224,7 +225,7 @@ try {
     }
     await settled(false, false, 'a short article shows neither control');
     await page.setViewportSize({ width: 1440, height: 900 });
-    console.log('Page jump: visibility, fragments, Back, frame edge, reduced motion');
+    console.log('Page jump: desktop behavior, narrow-screen reading column, reduced motion');
   }
 
   // Measure after fonts settle: typing must never move the content below it.
