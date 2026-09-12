@@ -145,8 +145,9 @@ export function llmsTxt(posts: Post[], site: URL, tags: string[] = [], projects:
     '',
     '> Записи о домашней инфраструктуре, инструментах и агентах.',
     '',
-    'Каждый адрес отвечает и markdown: запросите его с `Accept: text/markdown`,',
-    'либо возьмите `.md` напрямую. `/index.json` отдаёт весь каталог одним запросом.',
+    // Only what every deploy serves: object storage does not negotiate (ADR-0001).
+    'У каждой записи есть markdown-версия по своему адресу, `.md` — ссылки ниже.',
+    '`/index.json` отдаёт весь каталог одним запросом.',
     '',
     '## Записи',
     '',
