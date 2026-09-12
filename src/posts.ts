@@ -1,5 +1,8 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 
+import { footnoteProblems } from './footnotes.ts';
+import { calloutProblems } from './takeaways.ts';
+
 export type Post = CollectionEntry<'posts'>;
 
 /**
@@ -28,6 +31,13 @@ const visible = ({ data }: Post) => PREVIEW || data.status === 'published';
  */
 export async function listPosts(): Promise<Post[]> {
   const posts = await getCollection('posts', (entry) => visible(entry) && entry.data.kind !== 'page');
+  /* Every page that shows a post comes through here, so a broken citation or an
+     unknown callout stops the build with every problem in one message rather
+     than shipping a `[^3]` or a `[!TAKEWAY]` to readers. */
+  const problems = posts.flatMap((post) =>
+    [...footnoteProblems(post.body ?? ''), ...calloutProblems(post.body ?? '')].map((problem) => `${post.id}: ${problem}`),
+  );
+  if (problems.length) throw new Error(`Article markup does not add up:\n  - ${problems.join('\n  - ')}`);
   return posts.sort(byDateDesc);
 }
 

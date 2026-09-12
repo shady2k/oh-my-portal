@@ -364,6 +364,49 @@ describe('a project and what points at it', () => {
   });
 });
 
+describe('takeaways: the conclusions an article marks', () => {
+  const html = () => read('posts/published-example/index.html');
+
+  it('renders a marked quote as the authored observation note, labelled in Russian', () => {
+    expect(html()).toMatch(/<aside class="editorial-note accent takeaway"[^>]*>\s*<p class="field-label">Вывод<\/p>/);
+  });
+
+  it('drops the marker from the page and keeps the links inside', () => {
+    expect(html()).not.toContain('[!TAKEAWAY]');
+    expect(html()).toMatch(/Сначала туннель, потом прокси: иначе <a href="https:\/\/example.org\/dns"/);
+  });
+
+  it('keeps the marker in the markdown twin, where it reads as a quote', () => {
+    expect(read('posts/published-example.md')).toContain('> [!TAKEAWAY]\n> Сначала туннель, потом прокси');
+  });
+});
+
+describe('footnotes: the sources at the end of an article', () => {
+  const html = () => read('posts/published-example/index.html');
+
+  it('marks a reference in the text with its number, linked to the source', () => {
+    expect(html()).toMatch(/<sup><a href="#user-content-fn-1"[^>]*>1<\/a><\/sup>/);
+  });
+
+  it('lists the sources under a visible Russian heading, with the quote', () => {
+    const page = html();
+    expect(page).toMatch(/<h2[^>]*id="footnote-label"[^>]*>Источники<\/h2>/);
+    expect(page).not.toMatch(/id="footnote-label"[^>]*class="[^"]*sr-only/);
+    expect(page).not.toMatch(/class="[^"]*sr-only[^"]*"[^>]*id="footnote-label"/);
+    expect(page).not.toContain('Footnotes');
+    expect(page).toContain('«Туннель должен подняться до прокси»');
+  });
+
+  it('leads back from each source to its place in the text, in Russian', () => {
+    expect(html()).toContain('aria-label="Вернуться к месту в тексте 1"');
+    expect(html()).not.toContain('Back to reference');
+  });
+
+  it('keeps the footnotes as written in the markdown twin', () => {
+    expect(read('posts/published-example.md')).toContain('[^1]: [Документация туннеля](https://example.org/tunnel)');
+  });
+});
+
 describe('page jump: targets no heading can take', () => {
   const article = () => read('posts/published-example/index.html');
   const count = (html: string, id: string) => html.split(`id="${id}"`).length - 1;
