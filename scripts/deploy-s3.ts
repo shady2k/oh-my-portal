@@ -36,8 +36,9 @@
  * for the site to work at all, and the object ACL is additionally required for
  * the front page: measured, not assumed — see `br` issue vk-hosting-findings.
  */
-import { execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { setTimeout as delay } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
 
 const { values, positionals } = parseArgs({
@@ -154,11 +155,64 @@ const passes: Pass[] = [
  */
 const CHECKSUM_ENV = { AWS_REQUEST_CHECKSUM_CALCULATION: 'when_required' };
 
-const aws = (args: string[]) => {
-  const full = endpoint ? ['--endpoint-url', endpoint, ...args] : args;
-  if (dryRun) return console.log(`  aws ${full.join(' ')}`);
-  execFileSync('aws', full, { stdio: 'inherit', env: { ...process.env, ...CHECKSUM_ENV } });
+const REDIRECT_CONCURRENCY = 16;
+const RETRY_DELAYS_MS = [250, 1_000, 4_000];
+
+const transientAwsError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  return /429|500|502|503|504|SlowDown|Throttl|RequestTimeout|timed out|timeout|ECONNRESET|ECONNREFUSED|network/i.test(message);
 };
+
+const runAws = (full: string[]) =>
+  new Promise<void>((resolve, reject) => {
+    const child = spawn('aws', full, {
+      env: { ...process.env, ...CHECKSUM_ENV },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => process.stdout.write(chunk));
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+      process.stderr.write(chunk);
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`aws exited with ${code}: ${stderr}`));
+    });
+  });
+
+const aws = async (args: string[], options: { retries?: number } = {}) => {
+  const full = endpoint ? ['--endpoint-url', endpoint, ...args] : args;
+  if (dryRun) {
+    console.log(`  aws ${full.join(' ')}`);
+    return;
+  }
+  const maxRetries = Math.min(options.retries ?? 0, RETRY_DELAYS_MS.length);
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await runAws(full);
+      return;
+    } catch (error) {
+      const wait = attempt < maxRetries ? RETRY_DELAYS_MS[attempt] : undefined;
+      if (wait === undefined || !transientAwsError(error)) throw error;
+      console.warn(`aws transient failure; retrying in ${wait} ms (${attempt + 1}/${RETRY_DELAYS_MS.length})`);
+      await delay(wait);
+    }
+  }
+};
+
+async function forEachConcurrent<T>(items: T[], concurrency: number, fn: (item: T) => Promise<void>) {
+  let cursor = 0;
+  const worker = async () => {
+    while (true) {
+      const index = cursor++;
+      if (index >= items.length) return;
+      await fn(items[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+}
 
 /*
  * `cp --recursive`, not `sync`, and this is not a preference.
@@ -176,7 +230,7 @@ const aws = (args: string[]) => {
  */
 for (const pass of passes) {
   console.log(`\n→ ${pass.what}`);
-  aws([
+  await aws([
     's3', 'cp', dist, `s3://${bucket}`, '--recursive',
     '--acl', 'public-read',
     '--cache-control', pass.cacheControl,
@@ -200,15 +254,18 @@ const objects: { key: string; location: string }[] = manifest
   ? JSON.parse(readFileSync(manifest, 'utf8'))
   : [];
 if (objects.length) console.log(`\n→ редиректы старых адресов: ${objects.length} объектов`);
-for (const { key, location } of objects) {
-  aws([
-    's3api', 'put-object',
-    '--bucket', bucket,
-    '--key', key,
-    '--acl', 'public-read',
-    '--website-redirect-location', location,
-    '--cache-control', SHORT,
-  ]);
+if (objects.length) {
+  await forEachConcurrent(objects, REDIRECT_CONCURRENCY, ({ key, location }) =>
+    aws([
+      's3api', 'put-object',
+      '--bucket', bucket,
+      '--key', key,
+      '--acl', 'public-read',
+      '--website-redirect-location', location,
+      '--cache-control', SHORT,
+    ], { retries: RETRY_DELAYS_MS.length }),
+  );
+  console.log(`Загружено ${objects.length} redirect objects; concurrency=${REDIRECT_CONCURRENCY}`);
 }
 
 /*
@@ -235,7 +292,7 @@ for (const { key, location } of objects) {
  */
 const keep = ['rss/index.html', '_astro/*', ...objects.map((o) => o.key)];
 console.log('\n→ удаление того, чего больше нет в сборке');
-aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete', ...keep.flatMap((k) => ['--exclude', k])]);
+await aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete', ...keep.flatMap((k) => ['--exclude', k])]);
 
 /*
  * R2: `/rss/` serves the feed at the address it has always had, and NOT through
@@ -256,7 +313,7 @@ aws(['s3', 'sync', dist, `s3://${bucket}`, '--delete', ...keep.flatMap((k) => ['
  * between every subscriber's reader got a 404.
  */
 console.log('\n→ /rss/ под именем, которое ищет резолвер индекса');
-aws([
+await aws([
   's3', 'cp', `${dist}/rss/index.xml`, `s3://${bucket}/rss/index.html`,
   '--acl', 'public-read',
   '--cache-control', SHORT,
