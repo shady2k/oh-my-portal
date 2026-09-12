@@ -5,6 +5,7 @@
   "private": true,
   "description": "An ai-first publishing engine: markdown with frontmatter in git, built for an agent publishing pipeline.",
   "scripts": {
+    "agent:setup": "npm ci --include=dev && node scripts/setup-agent.ts",
     "dev": "PREVIEW=1 CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro dev",
     "build": "astro build && pagefind --site dist && node scripts/check-outputs.ts",
     "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro build && pagefind --site dist && CHECK_PLACEHOLDER_HOST=allow node scripts/check-outputs.ts",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@huggingface/transformers": "^4.2.0",
+    "@lancedb/lancedb": "^0.38.0",
     "@types/node": "^26.5.0",
     "@types/turndown": "^5.0.6",
     "fast-xml-parser": "^5.11.1",
@@ -41,6 +43,9 @@
     "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=22.6"
   },
   "allowScripts": {
     "onnxruntime-node@1.24.3": true

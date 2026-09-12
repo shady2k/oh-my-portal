@@ -16,11 +16,13 @@ The agent works with the content repository mounted inside the engine, as
 ```bash
 ls content/posts | head          # → about.md, anylogy.md, …
 git -C content remote -v         # → oh-my-portal-data
-npm ci                           # once; the model is cached outside node_modules, see below
+npm run agent:setup              # locked dependencies, LanceDB smoke check, model prefetch
 ```
 
 **Check:** `node --version` is 22.6 or newer, and `ls content/posts` lists the
-corpus. The project root is found by walking up from the session's working
+corpus. Setup ends with `LanceDB BM25 smoke check passed` and
+`Xenova/bge-m3 ready`; the model is cached outside `node_modules`, so later
+`npm ci` runs do not download it again. The project root is found by walking up from the session's working
 directory to the first `.git`, so a session started outside this checkout does
 not see the skill at all — that is the failure this step prevents.
 
@@ -102,7 +104,8 @@ In the order that finds the cause fastest:
 | The skill never loads | `hermes skills list \| grep portal-publishing` | the checkout is not trusted (`hermes skills trust`), or the session's working directory is not this repository |
 | It loads in one session and not another | `pwd` | the other session started outside the checkout, so the project root is elsewhere |
 | `gh` answers 401 | `printf '%s\n' "$GH_TOKEN"` | the broker is down, or the egress rule does not cover `api.github.com`. The placeholder is expected; a real-looking token is the bug |
-| `npm run embeddings` fails on the import | `ls node_modules/@huggingface/transformers` | `npm ci` has not run in this checkout |
+| `npm run embeddings` fails on the import | `ls node_modules/@huggingface/transformers` | `npm run agent:setup` has not completed in this checkout |
+| Agent setup fails before the model check | `npm run agent:setup -- --skip-model` | the Node version, locked npm dependencies, or LanceDB native module is unavailable; this path still executes the real Russian BM25 smoke query |
 | The model download fails or hangs | `curl -I https://huggingface.co` | the first run needs ~570 MB from `huggingface.co`; after that it is offline |
 | A Node install or fetch hangs on `connect`, while `curl` to the same host works | — | Node's address-family auto-selection on this network. `NODE_OPTIONS=--no-network-family-autoselection` fixes it, measured 2026-09-12 |
 | `npm run embeddings` is killed with no output, and so is everything else in the session | `systemctl show -p MemoryPeak <the service your session runs in>` | the machine's OOM killer. Measured 2026-09-12: a forward pass padded to 8192 tokens costs 4.3 GB per layer, the kernel killed the whole cgroup twice (8 GB peak, 5.5 GB swap), and the agent went down with it. The generator chunks at 512 tokens for exactly this reason — and while something is being changed there, run it in a capped scope (`systemd-run --user --scope -p MemoryMax=4G …`) so a failure is one process instead of the session |
