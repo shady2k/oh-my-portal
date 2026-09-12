@@ -172,6 +172,13 @@ describe('/llms.txt', () => {
     expect(txt).toContain('/index.json');
     expect(txt).toContain('/llms-full.txt');
   });
+
+  it('promises only what every deploy serves, so not negotiation on Accept (ADR-0001)', () => {
+    // Object storage answers `Accept: text/markdown` with HTML; an agent told
+    // otherwise asks for markdown, gets a page, and leaves.
+    expect(txt).not.toMatch(/Accept/i);
+    expect(txt).toContain('`.md`');
+  });
 });
 
 describe('the markdown catalogue', () => {
