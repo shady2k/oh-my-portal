@@ -9,6 +9,7 @@
     "build": "astro build && pagefind --site dist && node scripts/check-outputs.ts",
     "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro build && pagefind --site dist && CHECK_PLACEHOLDER_HOST=allow node scripts/check-outputs.ts",
     "preview": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro preview",
+    "preview:content": "CONTENT_DIR=content/posts DATA_DIR=content/data PROJECTS_DIR=content/projects IMAGES_DIR=content/images astro preview",
     "check": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro check",
     "redirects": "node scripts/gen-redirects.ts",
     "embeddings": "node scripts/embeddings.ts",
@@ -40,5 +41,8 @@
     "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
+  },
+  "allowScripts": {
+    "onnxruntime-node@1.24.3": true
   }
 }

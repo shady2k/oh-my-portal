@@ -21,6 +21,9 @@ import {
   CHUNK_TOKENS,
   DIMS,
   MODEL,
+  batchItems,
+  embeddingText,
+  maskedMeanVector,
   chunkIds,
   meanVector,
   nearest,
@@ -31,6 +34,8 @@ import {
 } from '../src/embeddings.ts';
 
 const args = process.argv.slice(2);
+const BATCH_CHUNKS = Number(process.env.EMBEDDING_BATCH_SIZE ?? 4);
+if (!Number.isInteger(BATCH_CHUNKS) || BATCH_CHUNKS < 1) throw new Error(`EMBEDDING_BATCH_SIZE must be a positive integer, got ${BATCH_CHUNKS}`);
 const flag = (name: string): string | undefined => {
   const at = args.indexOf(`--${name}`);
   return at === -1 ? undefined : args[at + 1];
@@ -56,14 +61,14 @@ const top = Number(flag('top') ?? 10);
  * - The graph's input shape is symbolic (`["batch_size", "sequence_length"]`), so
  *   the width is ours to choose — and the tokenizer chooses 8192, its
  *   `model_max_length`, whenever padding is left on.
- * - The `feature-extraction` pipeline cannot be talked out of that: it calls
- *   `this.tokenizer(texts, { padding: true, truncation: true })` and forwards no
- *   tokenizer options at all. One pass at 8192 tokens costs 4.3 GB for a single
- *   layer's attention, which is what had the kernel OOM-kill this machine's
- *   session twice. So the model is called directly, with the tokenizer's own
- *   output, where `padding: false` is honoured.
- * - A document is embedded chunk by chunk and the chunks are averaged: at 512
- *   tokens the same layer costs 16.8 MB.
+ * - The `feature-extraction` pipeline cannot be given the 512-token batch shape we
+ *   want: it pads to the tokenizer's `model_max_length` of 8192. One pass at that
+ *   width costs 4.3 GB for a single layer's attention, which is what had the
+ *   kernel OOM-kill this machine's session twice. So the model is called directly
+ *   with 512-token batches, and the attention mask excludes padding from pooling.
+ * - The compact editorial descriptor usually fits one pass. If a long article has
+ *   enough headings to exceed 512 tokens, its descriptor is still chunked and
+ *   averaged rather than sending the full prose through the model.
  */
 async function loadEmbedder() {
   const { AutoModel, AutoTokenizer, env } = await import('@huggingface/transformers');
@@ -76,16 +81,18 @@ async function loadEmbedder() {
       const ids: number[] = tokenizer(text, { add_special_tokens: false }).input_ids.tolist()[0];
       const chunks = chunkIds(ids);
       if (chunks.length === 0) throw new Error('a document with no tokens has no vector');
+      const pieces = chunks.map((chunk) => tokenizer.decode(chunk, { skip_special_tokens: false }));
       const vectors: number[][] = [];
-      for (const chunk of chunks) {
-        const piece = tokenizer.decode(chunk, { skip_special_tokens: false });
-        const inputs = tokenizer(piece, { padding: false, truncation: true, max_length: CHUNK_TOKENS });
+      for (const batch of batchItems(pieces, BATCH_CHUNKS)) {
+        const inputs = tokenizer(batch, { padding: true, truncation: true, max_length: CHUNK_TOKENS });
         const outputs = await model(inputs);
-        // Untyped by the library; the shape is [batch, tokens, dims], and with no
-        // padding every row is a real token, so the mean of the rows is the pooled
-        // vector — the same pooling the model card specifies.
-        const tokens: number[][] = outputs.last_hidden_state.tolist()[0];
-        vectors.push(meanVector(tokens));
+        // The padded rows must be excluded from mean pooling. The attention mask
+        // is the model's own statement of which rows are real tokens.
+        const tokens: number[][][] = outputs.last_hidden_state.tolist();
+        const masks: number[][] = inputs.attention_mask.tolist();
+        for (let index = 0; index < tokens.length; index += 1) {
+          vectors.push(maskedMeanVector(tokens[index], masks[index]));
+        }
       }
       out.push(meanVector(vectors));
     }
@@ -104,7 +111,7 @@ if (command === 'nearest') {
   const embed = await loadEmbedder();
   const post = byslug.get(subject);
   const fromFile = post ? null : resolve(subject);
-  const text = post?.body ?? (fromFile && existsSync(fromFile) ? readFileSync(fromFile, 'utf8') : null);
+  const text = post ? embeddingText(post) : fromFile && existsSync(fromFile) ? readFileSync(fromFile, 'utf8') : null;
   if (text === null) {
     console.error(`${subject}: neither a post in ${postsDir} nor a readable file`);
     process.exit(2);
@@ -142,12 +149,12 @@ if (todo.length === 0) {
 
 const embed = await loadEmbedder();
 const started = Date.now();
-const vectors = await embed(todo.map((entry) => byslug.get(entry.slug)!.body));
-todo.forEach((entry, index) => {
-  const vector = vectors[index];
+for (const [index, entry] of todo.entries()) {
+  const [vector] = await embed([embeddingText(byslug.get(entry.slug)!)]);
   if (vector.length !== DIMS) throw new Error(`${entry.slug}: ${vector.length} dimensions, expected ${DIMS}`);
   writeVector(cacheDir, entry.slug, { model: MODEL, dims: DIMS, hash: entry.hash, vector });
-});
+  console.log(`computed ${index + 1} of ${todo.length}: ${entry.slug}`);
+}
 const counted = (reason: 'missing' | 'stale' | 'model') => todo.filter((p) => p.reason === reason).length;
 console.log(
   `computed ${todo.length} of ${posts.length} (${counted('missing')} new, ${counted('stale')} stale, ` +

@@ -308,6 +308,9 @@ li {
 }
 
 table {
+  display: block;
+  max-inline-size: 100%;
+  overflow-x: auto;
   inline-size: 100%;
   border-collapse: collapse;
   font-size: var(--step--1);

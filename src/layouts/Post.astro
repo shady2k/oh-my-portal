@@ -1,4 +1,6 @@
 ---
+import { resolve } from 'node:path';
+
 import type { CollectionEntry } from 'astro:content';
 
 import Author from '../components/Author.astro';
@@ -8,6 +10,7 @@ import Subscribe from '../components/Subscribe.astro';
 import PageJump from '../components/ui/PageJump.astro';
 import Tag from '../components/Tag.astro';
 import { twinHash } from '../history.ts';
+import { similarPosts } from '../embeddings.ts';
 import { linkAttrs } from '../links.ts';
 import { listPosts } from '../posts.ts';
 import { articleMarkdown, projectPath } from '../projections.ts';
@@ -36,6 +39,14 @@ const all = await listPosts();
 const at = all.findIndex((entry) => entry.id === post.id);
 const newer = at > 0 ? all[at - 1] : undefined;
 const older = at >= 0 && at < all.length - 1 ? all[at + 1] : undefined;
+
+/* Vectors are committed data, so production builds never download or execute a model. */
+const embeddingsDir = resolve(process.env.DATA_DIR ?? 'content/data', 'embeddings');
+const byId = new Map(all.map((entry) => [entry.id, entry]));
+const similar = similarPosts(post.id, all.map((entry) => entry.id), embeddingsDir).flatMap((hit) => {
+  const entry = byId.get(hit.slug);
+  return entry ? [{ entry, cosine: hit.cosine }] : [];
+});
 
 /* The project this post names. listProjects() has already refused a name that
    is not a published project, so a missing match cannot happen in a build. */
@@ -183,6 +194,29 @@ const project = data.project ? (await listProjects()).find((entry) => entry.id =
       )}
     </ul>
   </nav>
+
+  {
+    similar.length > 0 && (
+      <section class="similar after" aria-labelledby="similar-heading" data-pagefind-ignore>
+        <h2 id="similar-heading" class="field-label">похожие записи</h2>
+        <p class="similar-note utility">// ближайшие соседи · cosine 0–1</p>
+        <ol class="similar-list">
+          {similar.map(({ entry, cosine }, index) => (
+            <li>
+              <div class="similar-meta">
+                <span class="similar-rank">[{index}]</span>
+                <data class="similar-score" value={cosine.toFixed(3)}>{cosine.toFixed(3)}</data>
+                <span class="similar-meter" aria-hidden="true"><span style={`width: ${Math.max(0, Math.min(1, cosine)) * 100}%`}></span></span>
+              </div>
+              <a href={`/posts/${entry.id}/`}>{entry.data.title}</a>
+              <p class="utility">{entry.data.summary}</p>
+            </li>
+          ))}
+        </ol>
+        <p class="similar-footnote utility">cosine embeddings · шкала 0–1 · вычислено при сборке</p>
+      </section>
+    )
+  }
 
   {/* R5, R4, R3: the end of an article is where reader interest peaks. */}
   <Author />
@@ -454,6 +488,78 @@ const project = data.project ? (await listProjects()).find((entry) => entry.id =
   .neighbours a:focus-visible {
     text-decoration: underline;
     text-underline-offset: 0.12em;
+  }
+
+  .similar-note,
+  .similar-footnote {
+    margin-block: var(--space-2) var(--space-3);
+    color: var(--ink-quiet);
+  }
+
+  .similar-footnote {
+    margin-block: var(--space-3) 0;
+  }
+
+  .similar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .similar-list li {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .similar-meta {
+    display: grid;
+    grid-template-columns: 2.5rem 3.5rem minmax(4rem, 8rem);
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--face-utility);
+    font-size: var(--step--1);
+    color: var(--ink-quiet);
+  }
+
+  .similar-rank,
+  .similar-score {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .similar-score {
+    text-align: end;
+  }
+
+  .similar-meter {
+    display: block;
+    block-size: 0.45rem;
+    background: var(--paper-sunk);
+    overflow: hidden;
+  }
+
+  .similar-meter > span {
+    display: block;
+    block-size: 100%;
+    background: var(--accent);
+  }
+
+  .similar-list a {
+    font-size: var(--step-1);
+    font-weight: 620;
+    text-decoration: none;
+  }
+
+  .similar-list a:hover,
+  .similar-list a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+  }
+
+  .similar-list p {
+    margin: 0;
+    color: var(--ink-quiet);
   }
 
   .after {

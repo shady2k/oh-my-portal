@@ -17,7 +17,14 @@ import { frontmatter } from './schema/frontmatter.ts';
 export const MODEL = 'Xenova/bge-m3';
 export const DIMS = 1024;
 
-export type Post = { slug: string; body: string; hash: string };
+export type Post = {
+  slug: string;
+  body: string;
+  hash: string;
+  title?: string;
+  summary?: string;
+  tags?: string[];
+};
 export type VectorFile = { model: string; dims: number; hash: string; vector: number[] };
 export type Pending = { slug: string; hash: string; reason: 'missing' | 'stale' | 'model' };
 export type Embedder = (texts: string[]) => Promise<number[][]>;
@@ -27,6 +34,16 @@ const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
 export function hashBody(body: string): string {
   return createHash('sha256').update(body, 'utf8').digest('hex');
+}
+
+/**
+ * The compact editorial description used for similarity. Full-body averaging
+ * overweights generic words in long technical articles; these fields state the
+ * topic a reader actually sees in a listing.
+ */
+export function embeddingText(post: Pick<Post, 'title' | 'summary' | 'tags' | 'body'>): string {
+  const headings = [...post.body.matchAll(/^#{1,6}\s+(.+?)\s*$/gm)].map((match) => match[1].trim());
+  return [post.title, post.summary, ...(post.tags ?? []), ...headings].filter(Boolean).join('\n');
 }
 
 /**
@@ -47,12 +64,13 @@ export function readPosts(postsDir: string): Post[] {
     if (!block) throw new Error(`${name}: no frontmatter block`);
     const parsed = frontmatter.safeParse(parseYaml(block[1]));
     if (!parsed.success) throw new Error(`${name}: ${parsed.error.message}`);
-    const { slug } = parsed.data;
+    const { slug, title, summary, tags } = parsed.data;
     if (posts.has(slug)) {
       throw new Error(`${name}: slug \`${slug}\` is already claimed, two articles cannot share one address`);
     }
     const body = source.slice(block[0].length);
-    posts.set(slug, { slug, body, hash: hashBody(body) });
+    const entry = { slug, body, title, summary, tags };
+    posts.set(slug, { ...entry, hash: hashBody(embeddingText(entry)) });
   }
   return [...posts.values()];
 }
@@ -88,6 +106,20 @@ export function pending(posts: Post[], dir: string, model = MODEL): Pending[] {
     else if (stored.hash !== hash) out.push({ slug, hash, reason: 'stale' });
   }
   return out;
+}
+
+/** Splits an array into bounded batches without dropping a short tail. */
+export function batchItems<T>(items: readonly T[], size: number): T[][] {
+  if (size < 1) throw new Error(`batch size ${size}`);
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+  return batches;
+}
+
+/** Pools only rows marked as real tokens by an attention mask. */
+export function maskedMeanVector(tokens: number[][], mask: readonly (number | bigint)[]): number[] {
+  if (tokens.length !== mask.length) throw new Error(`tokens and attention mask length ${tokens.length} and ${mask.length}`);
+  return meanVector(tokens.filter((_, index) => Number(mask[index]) === 1));
 }
 
 /**
@@ -156,4 +188,27 @@ export function nearest(
     .map((entry) => ({ slug: entry.slug, cosine: cosine(query, entry.vector) }))
     .sort((a, b) => b.cosine - a.cosine)
     .slice(0, top);
+}
+
+/**
+ * Finds the nearest usable vectors for a published post. A stale, malformed, or
+ * different-model cache entry is absent rather than silently compared.
+ */
+export function similarPosts(slug: string, candidates: readonly string[], dir: string, top = 3): { slug: string; cosine: number }[] {
+  const subject = readVector(dir, slug);
+  if (!subject || subject.model !== MODEL || subject.dims !== DIMS || subject.vector.length !== DIMS) return [];
+
+  const library = candidates
+    .filter((candidate) => candidate !== slug)
+    .flatMap((candidate) => {
+      const stored = readVector(dir, candidate);
+      if (!stored || stored.model !== MODEL || stored.dims !== DIMS || stored.vector.length !== DIMS) return [];
+      return [{ slug: candidate, vector: stored.vector }];
+    });
+
+  return nearest(subject.vector, library, top);
+}
+
+export function similarSlugs(slug: string, candidates: readonly string[], dir: string, top = 3): string[] {
+  return similarPosts(slug, candidates, dir, top).map((entry) => entry.slug);
 }

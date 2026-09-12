@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { CHUNK_TOKENS, DIMS, MODEL, chunkIds, cosine, hashBody, meanVector, nearest, pending, readPosts, writeVector } from '../src/embeddings.ts';
+import { CHUNK_TOKENS, DIMS, MODEL, batchItems, chunkIds, cosine, embeddingText, hashBody, maskedMeanVector, meanVector, nearest, pending, readPosts, similarPosts, similarSlugs, writeVector } from '../src/embeddings.ts';
 
 const post = (slug: string, body: string, extra = '') =>
   `---\ntitle: "T"\nslug: ${slug}\ndate: 2026-06-21\nkind: article\nstatus: draft\nauthor: human\nsummary: "S"\ntags: []\nlang: ru\n${extra}---\n${body}`;
@@ -23,6 +23,18 @@ describe('readPosts', () => {
   it('keys by the frontmatter slug, not the file name', () => {
     const dir = corpus({ 'renamed-file.md': post('the-slug', 'Hello.\n') });
     expect(readPosts(dir).map((p) => p.slug)).toEqual(['the-slug']);
+  });
+
+  it('builds the embedding input from editorial metadata and headings', () => {
+    const entry = readPosts(corpus({ 'a.md': post('a', '# First heading\nBody text.\n').replace('tags: []', 'tags: [ai-agents]') }))[0];
+    expect(embeddingText(entry)).toBe('T\nS\nai-agents\nFirst heading');
+  });
+
+  it('invalidates the vector hash when the title changes', () => {
+    const body = 'Same text.\n';
+    const before = readPosts(corpus({ 'a.md': post('a', body) }))[0].hash;
+    const after = readPosts(corpus({ 'a.md': post('a', body).replace('title: "T"', 'title: "Changed"') }))[0].hash;
+    expect(after).not.toBe(before);
   });
 
   it('hashes the body, so a frontmatter-only edit is not a new vector', () => {
@@ -87,6 +99,55 @@ describe('cosine and nearest', () => {
       { slug: 'mid', vector: [0.7, 0.7] },
     ];
     expect(nearest([1, 0], vectors, 2).map((r) => r.slug)).toEqual(['near', 'mid']);
+  });
+});
+
+describe('similarSlugs', () => {
+  it('returns nearest current-model vectors, excluding the subject and unusable files', () => {
+    const dir = cache();
+    const vector = (first: number, second = 0) => [first, second, ...new Array(DIMS - 2).fill(0)];
+    writeVector(dir, 'subject', { model: MODEL, dims: DIMS, hash: 's', vector: vector(1) });
+    writeVector(dir, 'near', { model: MODEL, dims: DIMS, hash: 'n', vector: vector(0.99, 0.01) });
+    writeVector(dir, 'far', { model: MODEL, dims: DIMS, hash: 'f', vector: vector(0, 1) });
+    writeVector(dir, 'wrong-model', { model: 'other/model', dims: DIMS, hash: 'w', vector: vector(1) });
+    writeVector(dir, 'wrong-width', { model: MODEL, dims: DIMS, hash: 'x', vector: [1, 0, 0] });
+
+    expect(similarSlugs('subject', ['subject', 'near', 'far', 'wrong-model', 'wrong-width', 'missing'], dir, 3)).toEqual(['near', 'far']);
+  });
+
+  it('keeps the cosine score for rendering a degree of similarity', () => {
+    const dir = cache();
+    const vector = (first: number, second = 0) => [first, second, ...new Array(DIMS - 2).fill(0)];
+    writeVector(dir, 'subject', { model: MODEL, dims: DIMS, hash: 's', vector: vector(1) });
+    writeVector(dir, 'near', { model: MODEL, dims: DIMS, hash: 'n', vector: vector(0.99, 0.01) });
+
+    const [result] = similarPosts('subject', ['subject', 'near'], dir);
+    expect(result?.slug).toBe('near');
+    expect(result?.cosine).toBeCloseTo(0.9999, 3);
+  });
+
+  it('returns no suggestions when the subject vector is unavailable', () => {
+    expect(similarSlugs('missing', ['missing', 'other'], cache())).toEqual([]);
+  });
+});
+
+describe('batched embedding helpers', () => {
+  it('groups items into bounded batches and keeps the tail', () => {
+    expect(batchItems([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+  });
+
+  it('rejects a batch size that would not make progress', () => {
+    expect(() => batchItems([1], 0)).toThrow(/batch size/);
+  });
+
+  it('pools only real tokens when the batch contains padding', () => {
+    const result = maskedMeanVector([[1, 0], [0, 1], [9, 9]], [1n, 1n, 0n]);
+    expect(result[0]).toBeCloseTo(Math.SQRT1_2);
+    expect(result[1]).toBeCloseTo(Math.SQRT1_2);
+  });
+
+  it('rejects an attention mask with a different width', () => {
+    expect(() => maskedMeanVector([[1, 0], [0, 1]], [1])).toThrow(/length/);
   });
 });
 
