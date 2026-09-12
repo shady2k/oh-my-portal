@@ -31,6 +31,19 @@ describe('the delete pass', () => {
   });
 });
 
+describe('cache-control defaults', () => {
+  const dryRun = () =>
+    execFileSync('node', ['scripts/deploy-s3.ts', 'dist-that-is-not-read', 'example-bucket', '--dry-run'], {
+      encoding: 'utf8',
+    });
+
+  it('keeps mutable content short-lived and hashed assets long-lived', () => {
+    const output = dryRun();
+    expect(output).toContain('max-age=60');
+    expect(output).toContain('max-age=2592000');
+  });
+});
+
 describe.each(['scripts/deploy-s3.ts', 'scripts/check-live.ts'])('%s', (file) => {
   it('imports only Node built-ins', () => {
     const source = readFileSync(file, 'utf8');
