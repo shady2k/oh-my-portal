@@ -23,8 +23,28 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { resolveChromium } from './browser.ts';
 
-const out = process.argv[2] ?? 'screenshots';
-const base = process.argv[3] ?? 'http://127.0.0.1:4321';
+/*
+ * `--path` exists for the writing agent: design §5 step 7 is "build, then
+ * screenshot.ts, and the model looks", and the fixed list below cannot show a
+ * page that was written five minutes ago. Repeatable, and each address is shot
+ * at the two viewports that matter — desktop and a phone.
+ */
+const argv = process.argv.slice(2);
+const flag = (name: string): string | undefined => {
+  const at = argv.indexOf(`--${name}`);
+  return at === -1 ? undefined : argv[at + 1];
+};
+const VALUE_FLAGS = new Set(['--path', '--out', '--base']);
+const positional = argv.filter((arg, i) => !VALUE_FLAGS.has(arg) && !VALUE_FLAGS.has(argv[i - 1] ?? ''));
+const paths = argv.reduce<string[]>((acc, arg, i) => (arg === '--path' ? [...acc, argv[i + 1]] : acc), []);
+
+const VIEWS = [
+  { suffix: 'desktop', width: 1440, height: 900 },
+  { suffix: 'mobile', width: 390, height: 844 },
+];
+
+const out = flag('out') ?? positional[0] ?? 'screenshots';
+const base = flag('base') ?? positional[1] ?? 'http://127.0.0.1:4321';
 
 /** Every viewport worth a look, and why it is worth one. */
 const SHOTS: { path: string; name: string; width: number; height: number }[] = [
@@ -49,6 +69,18 @@ const SHOTS: { path: string; name: string; width: number; height: number }[] = [
   { path: '/posts/scheduled-volume-backups/', name: 'code-mobile', width: 390, height: 844 },
 ];
 
+/*
+ * With no `--path` this is the fixed list, unchanged. With one, only the named
+ * addresses: a draft has no entry in that list, and shooting all of it to look
+ * at one page would spend the part of the run a human is waiting on.
+ */
+const shots = paths.length
+  ? paths.flatMap((path) => {
+      const name = path.replace(/^\/|\/$/g, '').replace(/\//g, '-');
+      return VIEWS.map((view) => ({ path, name: `${name}-${view.suffix}`, width: view.width, height: view.height }));
+    })
+  : SHOTS;
+
 
 mkdirSync(out, { recursive: true });
 
@@ -56,15 +88,29 @@ const executablePath = resolveChromium();
 const browser = await chromium.launch(executablePath ? { executablePath } : {});
 
 let failed = false;
-for (const { path, name, width, height } of SHOTS) {
+for (const { path, name, width, height } of shots) {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2 });
   const response = await page.goto(base + path, { waitUntil: 'networkidle' });
   const status = response?.status() ?? 0;
   if (status !== 200) failed = true;
   await page.evaluate(() => document.fonts.ready);
-  await page.evaluate(() => Promise.all(Array.from(document.images, (image) => image.decode().catch(() => {}))));
-  // Ensure offscreen blended drawings have been painted before a full-page capture.
+  /*
+   * Scroll through the page *first*: an image with `loading="lazy"` that is below
+   * the fold has not started loading, and `decode()` on it never settles — the
+   * article footer's avatar hung this whole run forever, measured 2026-09-12,
+   * which is the worst possible failure for a tool whose job is to notice broken
+   * pictures. Scrolling starts the loads; the bound below makes sure that even an
+   * image which never begins (hidden, or in a collapsed element) cannot stall the
+   * run. A picture that is still incomplete afterwards fails the image check
+   * below, by name, which is what should happen.
+   */
   for (const image of await page.locator('img').all()) await image.scrollIntoViewIfNeeded();
+  await page.evaluate(() =>
+    Promise.race([
+      Promise.all(Array.from(document.images, (image) => image.decode().catch(() => {}))),
+      new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+    ]),
+  );
   await page.evaluate(() => {
     window.scrollTo(0, 0);
     return new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
