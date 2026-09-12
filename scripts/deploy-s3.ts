@@ -58,8 +58,8 @@ if (!dist || !bucket) {
   process.exit(2);
 }
 
-/** Minutes, not days: this is how fast a new article reaches a reader. */
-const SHORT = 'public, max-age=300, must-revalidate';
+/** One minute: changed pages reach a reader promptly without disabling edge caching. */
+const SHORT = 'public, max-age=60, must-revalidate';
 /** A month. These change name when they change content, or never change. */
 const LONG = 'public, max-age=2592000, immutable';
 
