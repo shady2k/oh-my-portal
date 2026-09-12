@@ -90,8 +90,14 @@ export const frontmatter = z
     tools: z.array(toolRef).optional(),
     sources: z.array(z.url()).optional(),
     related: z.array(slug).optional(),
-    /** The project this entry belongs to: its page lists the entry, and the entry links back. */
-    project: slug.optional(),
+    /**
+     * The projects this entry belongs to: each one's page lists the entry, and
+     * the entry links back. One slug, or a list for an entry about several;
+     * read it through `projectsOf`, which gives a list either way.
+     */
+    project: z
+      .union([slug, z.array(slug).min(1).refine((list) => new Set(list).size === list.length, 'a project is named once')])
+      .optional(),
     recipe: recipe.optional(),
   })
   .refine((d) => !d.updated || d.updated >= d.date, {
@@ -108,3 +114,7 @@ export const frontmatter = z
   });
 
 export type Frontmatter = z.infer<typeof frontmatter>;
+
+/** The projects an entry names, as a list whether it was written as one slug or several. */
+export const projectsOf = (data: { project?: string | string[] }): string[] =>
+  data.project === undefined ? [] : ([] as string[]).concat(data.project);

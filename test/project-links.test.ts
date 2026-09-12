@@ -16,20 +16,39 @@ describe('posts and projects agree', () => {
   it('accepts a post that names its project and a stage that links that post', () => {
     expect(
       check({
-        posts: [{ id: 'first-post', project: 'thing' }],
+        posts: [{ id: 'first-post', projects: ['thing'] }],
         projects: [project('thing', { stages: [{ title: 'Prototype', post: 'first-post' }, { title: 'Next' }] })],
       }),
     ).toEqual([]);
   });
 
+  it('accepts a post about two projects, each of whose stages links it', () => {
+    expect(
+      check({
+        posts: [{ id: 'first-post', projects: ['thing', 'other'] }],
+        projects: [
+          project('thing', { stages: [{ title: 'Prototype', post: 'first-post' }] }),
+          project('other', { stages: [{ title: 'Launch', post: 'first-post' }] }),
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it('refuses each project a post names that nobody wrote, not only the first', () => {
+    expect(check({ posts: [{ id: 'first-post', projects: ['thing', 'ghost', 'phantom'] }], projects: [project('thing')] })).toEqual([
+      'Post first-post: project ghost is not a published project',
+      'Post first-post: project phantom is not a published project',
+    ]);
+  });
+
   it('refuses a post that names a project nobody wrote', () => {
-    expect(check({ posts: [{ id: 'first-post', project: 'ghost' }] })).toEqual([
+    expect(check({ posts: [{ id: 'first-post', projects: ['ghost'] }] })).toEqual([
       'Post first-post: project ghost is not a published project',
     ]);
   });
 
   it('refuses a published post naming a draft project in production, and allows it in a preview', () => {
-    const input = { posts: [{ id: 'first-post', project: 'thing' }], projects: [project('thing', { status: 'draft' })] };
+    const input = { posts: [{ id: 'first-post', projects: ['thing'] }], projects: [project('thing', { status: 'draft' })] };
     expect(check(input)).toEqual(['Post first-post: project thing is not a published project']);
     expect(check({ ...input, preview: true })).toEqual([]);
   });
@@ -42,11 +61,11 @@ describe('posts and projects agree', () => {
 
   it('refuses a stage whose post names no project, or another one', () => {
     const stages = [{ title: 'Prototype', post: 'first-post' }];
-    expect(check({ posts: [{ id: 'first-post' }], projects: [project('thing', { stages })] })).toEqual([
+    expect(check({ posts: [{ id: 'first-post', projects: [] }], projects: [project('thing', { stages })] })).toEqual([
       'Project thing: stage "Prototype" links post first-post, which does not name this project',
     ]);
     expect(
-      check({ posts: [{ id: 'first-post', project: 'other' }], projects: [project('thing', { stages }), project('other')] }),
+      check({ posts: [{ id: 'first-post', projects: ['other'] }], projects: [project('thing', { stages }), project('other')] }),
     ).toEqual(['Project thing: stage "Prototype" links post first-post, which does not name this project']);
   });
 
@@ -72,6 +91,6 @@ describe('posts and projects agree', () => {
   });
 
   it('reports every problem at once', () => {
-    expect(check({ legacyRegister: true, posts: [{ id: 'first-post', project: 'ghost' }] })).toHaveLength(2);
+    expect(check({ legacyRegister: true, posts: [{ id: 'first-post', projects: ['ghost'] }] })).toHaveLength(2);
   });
 });

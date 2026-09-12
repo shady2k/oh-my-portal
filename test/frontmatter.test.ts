@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { frontmatter } from '../src/schema/frontmatter.ts';
+import { frontmatter, projectsOf } from '../src/schema/frontmatter.ts';
 
 /** The smallest frontmatter that publishes — every required field, nothing else. */
 const minimal = {
@@ -136,9 +136,22 @@ describe('the article core', () => {
   });
 });
 
-describe('the project an entry belongs to', () => {
+describe('the projects an entry belongs to', () => {
   it('is optional, and a slug when present', () => {
     expect(parse({ project: 'some-project' }).success).toBe(true);
     rejects({ project: 'Some Project' });
+  });
+
+  it('may be a list, for an entry about more than one project', () => {
+    expect(parse({ project: ['some-project', 'other-project'] }).success).toBe(true);
+    rejects({ project: ['some-project', 'Other Project'] });
+    rejects({ project: [] });
+    rejects({ project: ['some-project', 'some-project'] });
+  });
+
+  it('reads as a list whichever way it was written', () => {
+    expect(projectsOf({})).toEqual([]);
+    expect(projectsOf({ project: 'some-project' })).toEqual(['some-project']);
+    expect(projectsOf({ project: ['some-project', 'other-project'] })).toEqual(['some-project', 'other-project']);
   });
 });

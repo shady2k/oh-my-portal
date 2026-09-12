@@ -33,7 +33,7 @@ Optional, and this is where the ai-first layer comes from:
 | `tools` | `{name, version}` pairs the article covers |
 | `sources` | URLs; what the fact check filled |
 | `related` | slugs; cannot name the entry itself |
-| `project` | the slug of the project this entry belongs to |
+| `project` | the slug of the project this entry belongs to, or a list of slugs when it is about several — each named once |
 | `recipe` | the structured core: `goal`, `verified_on`, optional `stack`, `steps`, `pitfalls`, `do_not` |
 
 Three rules the schema itself enforces, each with a reason worth knowing:

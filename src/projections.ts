@@ -1,6 +1,7 @@
 import { stringify as toYaml } from 'yaml';
 
 import type { Post } from './posts.ts';
+import { projectsOf } from './schema/frontmatter.ts';
 import type { ProjectFrontmatter } from './schema/project.ts';
 
 /** Shaped like a loaded project entry; only what the projections read. */
@@ -29,6 +30,12 @@ export const postPath = (post: Post) => `/posts/${post.id}/`;
 /** `/projects/<slug>/` — the project page and its markdown twin. */
 export const projectPath = (project: { id: string }) => `/projects/${project.id}/`;
 
+/** `projects` for a machine version: always a list of addresses, and absent when there are none. */
+const projectUrls = (data: { project?: string | string[] }, site: URL) => {
+  const ids = projectsOf(data);
+  return ids.length ? { projects: ids.map((id) => absolute(site, projectPath({ id }))) } : {};
+};
+
 const absolute = (site: URL, path: string) => new URL(path, site).href;
 
 /**
@@ -54,7 +61,7 @@ export function articleMarkdown(post: Post, site: URL): string {
     lang: data.lang,
     summary: data.summary,
     tags: data.tags,
-    ...(data.project ? { project: absolute(site, projectPath({ id: data.project })) } : {}),
+    ...projectUrls(data, site),
     ...(data.tools ? { tools: data.tools } : {}),
     ...(data.sources ? { sources: data.sources } : {}),
     ...(data.related ? { related: data.related.map((s) => absolute(site, `/posts/${s}/`)) } : {}),
@@ -83,7 +90,7 @@ export function articleJson(post: Post, site: URL) {
     lang: data.lang,
     summary: data.summary,
     tags: data.tags,
-    ...(data.project ? { project: absolute(site, projectPath({ id: data.project })) } : {}),
+    ...projectUrls(data, site),
     ...(data.tools ? { tools: data.tools } : {}),
     ...(data.sources ? { sources: data.sources } : {}),
     ...(data.related ? { related: data.related.map((s) => absolute(site, `/posts/${s}/`)) } : {}),
@@ -108,7 +115,7 @@ export function indexJson(posts: Post[], site: URL) {
       author: post.data.author,
       summary: post.data.summary,
       tags: post.data.tags,
-      ...(post.data.project ? { project: absolute(site, projectPath({ id: post.data.project })) } : {}),
+      ...projectUrls(post.data, site),
       /* Whether there is a structured core, so an agent can skip the essays. */
       has_recipe: Boolean(post.data.recipe),
     })),

@@ -51,10 +51,10 @@ describe('what the index must not contain', () => {
 
   it('indexes what someone reads, not the listings and not the search page', async () => {
     const entry = JSON.parse(readFileSync(`${OUT}/pagefind/pagefind-entry.json`, 'utf8'));
-    // One published fixture article, /about/, /projects/ and the two published
+    // One published fixture article, /about/, /projects/ and the three published
     // project pages. Someone searching a project's name should land on it. The
     // index page, the tag pages and /search/ carry no data-pagefind-body.
-    expect(entry.languages.ru.page_count).toBe(5);
+    expect(entry.languages.ru.page_count).toBe(6);
   });
 
   it('finds a project by name, which is why /projects/ is indexed at all', async () => {

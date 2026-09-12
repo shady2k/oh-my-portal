@@ -5,6 +5,7 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 
 import { linkProblems } from './project-links.ts';
 import { listPosts, PREVIEW, type Post } from './posts.ts';
+import { projectsOf } from './schema/frontmatter.ts';
 import type { ProjectFrontmatter } from './schema/project.ts';
 
 export type Project = CollectionEntry<'projects'>;
@@ -20,7 +21,7 @@ export type Project = CollectionEntry<'projects'>;
 export async function listProjects(): Promise<Project[]> {
   const entries = await getCollection('projects');
   const problems = linkProblems({
-    posts: (await listPosts()).map((post) => ({ id: post.id, project: post.data.project })),
+    posts: (await listPosts()).map((post) => ({ id: post.id, projects: projectsOf(post.data) })),
     projects: entries.map(({ id, data }) => ({
       id,
       slug: data.slug,
@@ -49,9 +50,9 @@ export async function listProjects(): Promise<Project[]> {
     );
 }
 
-/** The posts that name this project, newest first. */
+/** The posts that name this project among theirs, newest first. */
 export async function postsOf(project: { id: string }): Promise<Post[]> {
-  return (await listPosts()).filter((post) => post.data.project === project.id);
+  return (await listPosts()).filter((post) => projectsOf(post.data).includes(project.id));
 }
 
 /** How each state reads to a human. The vocabulary is the register's whole value. */

@@ -15,6 +15,7 @@ import { linkAttrs } from '../links.ts';
 import { listPosts } from '../posts.ts';
 import { articleMarkdown, projectPath } from '../projections.ts';
 import { listProjects } from '../projects.ts';
+import { projectsOf } from '../schema/frontmatter.ts';
 import Base from './Base.astro';
 import { displayDate } from '../dates.ts';
 import Revision from '../components/Revision.astro';
@@ -48,9 +49,13 @@ const similar = similarPosts(post.id, all.map((entry) => entry.id), embeddingsDi
   return entry ? [{ entry, cosine: hit.cosine }] : [];
 });
 
-/* The project this post names. listProjects() has already refused a name that
-   is not a published project, so a missing match cannot happen in a build. */
-const project = data.project ? (await listProjects()).find((entry) => entry.id === data.project) : undefined;
+/* The projects this post names, in the order written. listProjects() has already
+   refused a name that is not a published project, so a missing match cannot
+   happen in a build. */
+const named = projectsOf(data);
+const projects = named.length
+  ? (await listProjects()).filter((entry) => named.includes(entry.id)).sort((a, b) => named.indexOf(a.id) - named.indexOf(b.id))
+  : [];
 ---
 
 <Base
@@ -103,10 +108,17 @@ const project = data.project ? (await listProjects()).find((entry) => entry.id =
       {/* Kept out of the top line: none of the three is news, and each matters
           only once someone is already reading. */}
       {
-        (data.updated || data.author === 'being' || project) && (
+        (data.updated || data.author === 'being' || projects.length > 0) && (
           <p class="under" data-pagefind-ignore>
             {data.updated && <span>обновлено {displayDate(data.updated)}</span>}
-            {project && <span>проект: <a href={projectPath(project)}>{project.data.title}</a></span>}
+            {projects.length > 0 && (
+              <span>
+                {projects.length === 1 ? 'проект' : 'проекты'}:{' '}
+                {projects.map((entry, i) => (
+                  <>{i > 0 && ', '}<a href={projectPath(entry)}>{entry.data.title}</a></>
+                ))}
+              </span>
+            )}
             {data.author === 'being' && <span class="being">написано существом</span>}
           </p>
         )

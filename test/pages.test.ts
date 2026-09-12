@@ -343,18 +343,24 @@ describe('a project and what points at it', () => {
     expect(feature).toContain('Что проверяет живой проект?');
   });
 
-  it('links a post back to its project', () => {
-    expect(read('posts/published-example/index.html')).toMatch(/проект: <a[^>]*href="\/projects\/live-thing\/"[^>]*>Живой проект<\/a>/);
+  it('links a post back to each of its projects', () => {
+    const html = read('posts/published-example/index.html');
+    expect(html).toMatch(/<a[^>]*href="\/projects\/live-thing\/"[^>]*>Живой проект<\/a>/);
+    expect(html).toMatch(/<a[^>]*href="\/projects\/sibling-thing\/"[^>]*>Соседний проект<\/a>/);
   });
 
-  it('carries the project into the machine versions', () => {
-    const url = 'https://journal.example.test/projects/live-thing/';
-    expect(read('posts/published-example.md')).toContain(`project: ${url}`);
-    expect(JSON.parse(read('posts/published-example.json')).project).toBe(url);
-    expect(JSON.parse(read('index.json')).posts.find((p: { slug: string }) => p.slug === 'published-example').project).toBe(url);
+  it('lists the post on each project it names', () => {
+    expect(read('projects/sibling-thing/index.html')).toContain('href="/posts/published-example/"');
+  });
+
+  it('carries the projects into the machine versions', () => {
+    const urls = ['https://journal.example.test/projects/live-thing/', 'https://journal.example.test/projects/sibling-thing/'];
+    expect(read('posts/published-example.md')).toContain(`projects:\n  - ${urls[0]}\n  - ${urls[1]}\n`);
+    expect(JSON.parse(read('posts/published-example.json')).projects).toEqual(urls);
+    expect(JSON.parse(read('index.json')).posts.find((p: { slug: string }) => p.slug === 'published-example').projects).toEqual(urls);
     expect(read('llms.txt')).toContain('## Проекты');
     expect(read('llms.txt')).toContain('https://journal.example.test/projects/live-thing.md');
-    expect(read('projects/index.md')).toContain(`## [Живой проект](${url})`);
+    expect(read('projects/index.md')).toContain(`## [Живой проект](${urls[0]})`);
   });
 });
 
