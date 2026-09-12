@@ -1,0 +1,22 @@
+#!/bin/sh
+# Publishing is the maintainer's merge, not a push.
+#
+# Install into each of the agent's checkouts as .git/hooks/pre-push (chmod +x).
+# It is a guard on the agent's own machine and nothing more: the agent can delete
+# it, so treat it as a speed bump. What it buys is that git's documented way to
+# publish — `git push origin main` — meets a refusal instead of a merge, which is
+# the difference between a run that stops and a run that publishes unreviewed
+# content.
+#
+# The loop reads every ref being pushed, not just the first: `git push --all`
+# would otherwise slip past it. The `|| [ -n "$remote_ref" ]` covers a final line
+# without a trailing newline.
+while read -r _local_ref _local_sha remote_ref _remote_sha || [ -n "$remote_ref" ]; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo "refusing to push $remote_ref: open a pull request from draft/<slug> instead" >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0
