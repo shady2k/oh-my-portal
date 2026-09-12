@@ -68,3 +68,8 @@ or none, a second featured project, and a leftover `data/projects.yaml`.
 `author`. It follows the entry point, not the text: the maintainer asked →
 `human`; nobody asked → `being`. Disclosure is part of the product, and the
 field is how a reader is never in doubt about who wrote what.
+
+## In the body
+
+- Sources: GFM footnotes, `[^1]` in the text and `[^1]: [Title](url) — «quote»` at the end. Numbers in reading order; every reference defined, every definition referenced — otherwise the build fails.
+- A conclusion: `> [!TAKEAWAY]` on the first line of a quote. Renders as the red-barred note «Вывод». No other `[!…]` marker is accepted.

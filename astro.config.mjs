@@ -2,6 +2,8 @@
 import { satteri } from '@astrojs/markdown-satteri';
 import { defineConfig } from 'astro/config';
 
+import { FOOTNOTES } from './src/footnotes.ts';
+import { TAKEAWAY_LABEL, TAKEAWAY_MARKER } from './src/takeaways.ts';
 import { codeTheme, syntaxVariables } from './src/styles/code-theme.ts';
 
 // The public URL is deployment data, not engine data: this repository carries no
@@ -81,6 +83,50 @@ const externalLinks = {
   },
 };
 
+/*
+ * A quote that opens with `[!TAKEAWAY]` is a conclusion the author marked
+ * (src/takeaways.ts). It becomes the authored observation note — an aside, not a
+ * quotation — with its label first, and the marker comes off the page while
+ * everything inside, links included, stays as written.
+ */
+const takeaways = {
+  name: 'takeaways',
+  /** @param {any} node @param {any} ctx */
+  text(node, ctx) {
+    const mark = `[!${TAKEAWAY_MARKER}]`;
+    if (!node.value.startsWith(mark)) return;
+    const paragraph = ctx.parent(node);
+    if (paragraph?.type !== 'paragraph' || ctx.indexOf(node) !== 0) return;
+    const quote = ctx.parent(paragraph);
+    if (quote?.type !== 'blockquote' || ctx.indexOf(paragraph) !== 0) return;
+    ctx.setProperty(node, 'value', node.value.slice(mark.length).replace(/^[ \t]*\n/, ''));
+    ctx.setProperty(quote, 'data', { hName: 'aside', hProperties: { className: ['editorial-note', 'accent', 'takeaway'] } });
+    ctx.prependChild(quote, {
+      type: 'paragraph',
+      data: { hProperties: { className: ['field-label'] } },
+      children: [{ type: 'text', value: TAKEAWAY_LABEL }],
+    });
+  },
+};
+
+/*
+ * GFM hides the footnote heading as screen-reader-only text. Here it is the
+ * visible heading of an article's sources (src/footnotes.ts), so the hiding
+ * class comes off.
+ */
+const visibleFootnoteLabel = {
+  name: 'visible-footnote-label',
+  element: {
+    filter: ['h2'],
+    /** @param {any} node @param {any} ctx */
+    visit(node, ctx) {
+      if (node.properties?.id !== 'footnote-label') return;
+      const classes = [node.properties?.className ?? []].flat().filter((name) => name !== 'sr-only');
+      ctx.setProperty(node, 'className', classes);
+    },
+  },
+};
+
 /** @type {import('astro').AstroIntegration} */
 const uiKit = {
   name: 'field-journal-ui-kit',
@@ -115,7 +161,13 @@ export default defineConfig({
     port: Number(process.env.PORT ?? 4321),
   },
   markdown: {
-    processor: satteri({ hastPlugins: [externalLinks] }),
+    /* Footnotes are an article's sources (src/footnotes.ts): the list gets a
+       visible Russian heading and Russian back-links instead of GFM's defaults. */
+    processor: satteri({
+      mdastPlugins: [takeaways],
+      hastPlugins: [externalLinks, visibleFootnoteLabel],
+      features: { gfm: { footnotes: FOOTNOTES } },
+    }),
     /*
      * Design §12. Astro's default is Shiki with `github-dark`, which puts a dark
      * slab on a near-white page in colours nothing else on the site can reach.

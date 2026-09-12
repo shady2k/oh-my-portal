@@ -185,6 +185,21 @@ is only the Astro binding. That split is what lets the content repository's CI
 checks (§9) and the agent tooling (§10, 1d) import the same schema without
 booting Astro — one definition, three consumers.
 
+### Sources and takeaways in the body
+
+Two conventions inside the markdown body, both chosen because they stay
+readable wherever the file goes — the `.md` twin, GitHub, an editor, an agent:
+
+- **Sources are GFM footnotes.** `[^1]` in the text, `[^1]: [Title](url) — «quote»`
+  at the end of the body. The page renders them as a numbered «Источники» list
+  with a link back to each place in the text. Labels are the numbers the list
+  shows, in reading order; a reference with no definition, a definition nothing
+  refers to, or a label out of order fails the build (`src/footnotes.ts`).
+- **A conclusion is a callout.** A quote that opens with `> [!TAKEAWAY]` renders
+  as the authored observation note — the red-barred `EditorialNote` of §12 —
+  labelled «Вывод». Any other `[!…]` marker fails the build, so a typo cannot
+  quietly turn a conclusion into a plain quote (`src/takeaways.ts`).
+
 ### Drafts
 
 A draft lives **in a branch**, never on the production site: the agent pushes

@@ -17,7 +17,7 @@ catalog can be built with `UI_KIT=1 npm run build:examples`.
 | `ThemeInit.astro`, `ThemePicker.astro` | Pre-paint choice, system/light/dark segmented radio control, safe persistence and cross-tab sync |
 | `PageHeader.astro` | Page title, optional eyebrow, description and navigation slot |
 | `TypedHeadline.astro` | Complete accessible heading, reserved height, brief typing and square cursor; static without JS or with reduced motion |
-| `EditorialNote.astro` | Quiet note or red-barred authored observation, label and body slot |
+| `EditorialNote.astro` | Quiet note or red-barred authored observation, label and body slot; its look is in `styles/ui.css`, shared with an article's `> [!TAKEAWAY]` |
 | `SiteFooter.astro` | Configured author, build year, about, contact and RSS; no invented license |
 | `ImageViewer.astro` | One native dialog in Base, opened by image links; close, Escape, backdrop, focus restoration |
 | `PageJump.astro` | ↑ to the site header and ↓ to the neighbours block on an article; each shows only while useful; plain fragment links, instant jump; hidden without JS |
