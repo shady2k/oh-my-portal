@@ -9,7 +9,7 @@
 
 export interface LinkedPost {
   id: string;
-  project?: string;
+  projects: string[];
 }
 
 export interface LinkedProject {
@@ -52,15 +52,15 @@ export function linkProblems({ posts, projects, preview, legacyRegister }: LinkI
 
   const visible = projects.filter((project) => preview || project.status === 'published');
   const visibleIds = new Set(visible.map((project) => project.id));
-  const projectOf = new Map(posts.map((post) => [post.id, post.project]));
+  const projectsOf = new Map(posts.map((post) => [post.id, post.projects]));
 
   /* A stage and the post it links cannot disagree about where the post belongs. */
   for (const project of visible) {
     for (const stage of project.stages ?? []) {
       if (!stage.post) continue;
-      if (!projectOf.has(stage.post)) {
+      if (!projectsOf.has(stage.post)) {
         problems.push(`Project ${project.id}: stage "${stage.title}" links post ${stage.post}, which is not a published post`);
-      } else if (projectOf.get(stage.post) !== project.id) {
+      } else if (!projectsOf.get(stage.post)!.includes(project.id)) {
         problems.push(`Project ${project.id}: stage "${stage.title}" links post ${stage.post}, which does not name this project`);
       }
     }
@@ -68,8 +68,8 @@ export function linkProblems({ posts, projects, preview, legacyRegister }: LinkI
 
   /* What keeps a published post from linking a project page production never built. */
   for (const post of posts) {
-    if (post.project && !visibleIds.has(post.project)) {
-      problems.push(`Post ${post.id}: project ${post.project} is not a published project`);
+    for (const id of post.projects) {
+      if (!visibleIds.has(id)) problems.push(`Post ${post.id}: project ${id} is not a published project`);
     }
   }
 

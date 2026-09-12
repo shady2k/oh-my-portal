@@ -212,19 +212,33 @@ describe('a project page in markdown', () => {
   });
 });
 
-describe('a post that belongs to a project', () => {
+describe('a post that belongs to projects', () => {
   const base = post as unknown as { id: string; body: string; data: Record<string, unknown> };
   const member = { ...base, data: { ...base.data, project: 'some-project' } } as never;
+  const both = { ...base, data: { ...base.data, project: ['some-project', 'other-project'] } } as never;
   const url = 'https://example.com/projects/some-project/';
+  const other = 'https://example.com/projects/other-project/';
 
-  it('names it by address in both twins and in the catalogue', () => {
-    expect(parseYaml(articleMarkdown(member, SITE).split('---')[1]!).project).toBe(url);
-    expect(articleJson(member, SITE).project).toBe(url);
-    expect(indexJson([member], SITE).posts[0]!.project).toBe(url);
+  it('names one project as a list of one address in both twins and in the catalogue', () => {
+    expect(parseYaml(articleMarkdown(member, SITE).split('---')[1]!).projects).toEqual([url]);
+    expect(articleJson(member, SITE).projects).toEqual([url]);
+    expect(indexJson([member], SITE).posts[0]!.projects).toEqual([url]);
+  });
+
+  it('names every project, in the order written', () => {
+    expect(parseYaml(articleMarkdown(both, SITE).split('---')[1]!).projects).toEqual([url, other]);
+    expect(articleJson(both, SITE).projects).toEqual([url, other]);
+    expect(indexJson([both], SITE).posts[0]!.projects).toEqual([url, other]);
+  });
+
+  it('has one field for a parser, so the single-valued one is gone', () => {
+    expect(parseYaml(articleMarkdown(member, SITE).split('---')[1]!)).not.toHaveProperty('project');
+    expect(articleJson(member, SITE)).not.toHaveProperty('project');
+    expect(indexJson([member], SITE).posts[0]).not.toHaveProperty('project');
   });
 
   it('leaves the field out for a post that belongs to none', () => {
-    expect(articleJson(essay, SITE)).not.toHaveProperty('project');
+    expect(articleJson(essay, SITE)).not.toHaveProperty('projects');
   });
 });
 

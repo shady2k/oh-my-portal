@@ -14,7 +14,7 @@ author: human
 summary: "Существует в сборке."
 tags: [homelab]
 lang: ru
-project: live-thing
+project: [live-thing, sibling-thing]
 tools:
   - name: wireguard
     version: "1.0.20250521"

@@ -137,8 +137,12 @@ question, observation, featured, sketch, repo, site            # optional
 nothing a profile page would not, and it goes stale without a reader being able
 to tell, while "archived since 2024" is still true a year later.
 
-A post names its project with `project: some-project`. The build refuses a post
-naming a project it does not publish, a stage whose post names another project
+A post names its project with `project: some-project`, or several with
+`project: [some-project, other-project]` when it is about more than one; each
+named project's page lists it. The machine versions (`.md`, `.json`,
+`/index.json`) always carry the list, as `projects: [<address>, ...]`, so a
+parser meets one shape. The build refuses a post naming a project it does not
+publish, a stage whose post names another project
 or none, a second featured project, a slug that differs from its file name, and
 a leftover `data/projects.yaml`.
 
@@ -168,7 +172,7 @@ tools:                          # what the article covers
     version: "1.5.9"
 sources:  [https://...]
 related:  [other-slug]
-project:  some-project          # the project this entry belongs to
+project:  some-project          # or [a, b]: the projects this entry belongs to
 ```
 
 The schema is a Zod schema in Astro Content Collections, **validated at build
