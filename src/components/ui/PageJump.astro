@@ -121,6 +121,13 @@
     block-size: 1rem;
   }
 
+  @media (max-width: 48rem) {
+    /* The frame has no free side rail here; a fixed control would cover prose. */
+    .page-jump {
+      display: none;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     a {
       transition: none;
