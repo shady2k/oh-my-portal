@@ -11,6 +11,7 @@
     "preview": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro preview",
     "check": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro check",
     "redirects": "node scripts/gen-redirects.ts",
+    "embeddings": "node scripts/embeddings.ts",
     "test": "vitest run --no-file-parallelism",
     "verify": "npm run check && npm run test",
     "screenshot": "node scripts/screenshot.ts",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@huggingface/transformers": "^4.2.0",
     "@types/node": "^26.5.0",
     "@types/turndown": "^5.0.6",
     "fast-xml-parser": "^5.11.1",
