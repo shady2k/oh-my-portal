@@ -1,9 +1,9 @@
 # Installing the publishing agent
 
-The agent's instructions live in this repository — `publishing.md` §2 in the
-content repository explains why: its token can write the content repository, so
-instructions kept beside the articles are instructions the same token can
-rewrite. Here it cannot reach them at all.
+The agent's instructions — the `portal-publishing` skill — live in the content
+repository, at `.hermes/skills/portal-publishing/`, because what they carry is
+specific to one site. This file is how an engine checkout is made into the
+agent's working directory and how that skill reaches it.
 
 What follows is done **once**, by a human, on the machine the agent runs on.
 Three steps, each with the check that says it worked, and then the doctor.
@@ -24,36 +24,39 @@ corpus. Setup ends with `LanceDB BM25 smoke check passed` and
 `Xenova/bge-m3 ready`; the model is cached outside `node_modules`, so later
 `npm ci` runs do not download it again. The project root is found by walking up from the session's working
 directory to the first `.git`, so a session started outside this checkout does
-not see the skill at all — that is the failure this step prevents.
+not see its tools at all — that is the failure this step prevents.
 
-## 2. Trust the checkout, so the skill loads
+## 2. Point Hermes at the skill
 
-Skills come in two tiers here: the agent's home directory
-(`~/.hermes/skills/`) and the **project-local** directory of the checkout the
-session runs in (`.hermes/skills/`, or `.agents/skills/`). The publishing skill
-is project-local, because that is versioned with the engine and reachable only
-where the token cannot write:
+The skill is not in this checkout, so it is not a project-local skill. It is an
+**external** one, named in the agent's `~/.hermes/config.yaml`:
+
+```yaml
+skills:
+  external_dirs:
+    - /path/to/oh-my-portal/content/.hermes/skills
+```
 
 ```bash
-hermes skills trust /path/to/oh-my-portal
 hermes skills list | grep portal-publishing
 ```
 
 **Check:** one line, `portal-publishing`, and a description that says what it
-does. A `git pull` in this repository can then update the instructions, and
-Hermes scans them on load, so a pull cannot smuggle a skill past you.
+does. A `git -C content pull` then updates the instructions; there is no copy to
+drift.
 
-**A symlink is not a substitute.** Measured: the loader's scan
-(`rglob('SKILL.md')`) does not descend into a symlinked directory, so a symlink
-from `~/.hermes/skills/portal-publishing` to this checkout silently does not
-load. If the agent's session ever starts outside this checkout, copy the skill
-instead — and then compare the copies, because a stale instruction is worse than
-none:
+**No other copy may exist.** Hermes resolves a skill name project first, then
+`~/.hermes/skills/`, then `external_dirs`, so an old `portal-publishing` in
+either of the first two silently wins over the one in the content repository.
+Earlier versions of this engine shipped the skill in `.hermes/skills/` and told
+you to copy it into the home directory; if you did, remove that copy:
 
 ```bash
-cp -r .hermes/skills/portal-publishing ~/.hermes/skills/
-sha256sum .hermes/skills/portal-publishing/SKILL.md ~/.hermes/skills/portal-publishing/SKILL.md
+ls ~/.hermes/skills/portal-publishing .hermes/skills/portal-publishing 2>/dev/null   # → nothing
 ```
+
+If `content/` is a symlink on this host, name the real directory in
+`external_dirs`.
 
 ## 3. Broker, environment, hook
 
@@ -101,8 +104,8 @@ In the order that finds the cause fastest:
 
 | Symptom | Check | Cause |
 |---|---|---|
-| The skill never loads | `hermes skills list \| grep portal-publishing` | the checkout is not trusted (`hermes skills trust`), or the session's working directory is not this repository |
-| It loads in one session and not another | `pwd` | the other session started outside the checkout, so the project root is elsewhere |
+| The skill never loads | `hermes skills list \| grep portal-publishing` | `skills.external_dirs` does not name `content/.hermes/skills`, or names a path that does not exist — Hermes skips a missing directory without a word |
+| The skill loads but says something the content repository no longer does | `ls ~/.hermes/skills/portal-publishing` | a stale copy in the home directory wins over `external_dirs`; remove it |
 | `gh` answers 401 | `printf '%s\n' "$GH_TOKEN"` | the broker is down, or the egress rule does not cover `api.github.com`. The placeholder is expected; a real-looking token is the bug |
 | `npm run embeddings` fails on the import | `ls node_modules/@huggingface/transformers` | `npm run agent:setup` has not completed in this checkout |
 | Agent setup fails before the model check | `npm run agent:setup -- --skip-model` | the Node version, locked npm dependencies, or LanceDB native module is unavailable; this path still executes the real Russian BM25 smoke query |
