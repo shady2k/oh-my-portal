@@ -70,6 +70,10 @@ describe('what the index must not contain', () => {
 describe('the page itself', () => {
   const html = () => readFileSync(`${OUT}/search/index.html`, 'utf8');
 
+  it('focuses the search field when the page opens', () => {
+    expect(html()).toMatch(/<input[^>]*autofocus/);
+  });
+
   it('says so instead of showing a box that does nothing, without JavaScript', () => {
     // The form ships hidden and the script reveals it; the fallback ships visible.
     expect(html()).toMatch(/<form[^>]*hidden/);

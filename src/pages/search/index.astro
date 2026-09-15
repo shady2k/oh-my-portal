@@ -27,6 +27,7 @@ import Base from '../../layouts/Base.astro';
       id="q"
       type="search"
       name="q"
+      autofocus
       autocomplete="off"
       autocapitalize="off"
       spellcheck="false"
@@ -166,6 +167,7 @@ import Base from '../../layouts/Base.astro';
 
   form.hidden = false;
   unavailable.remove();
+  input.focus({ preventScroll: true });
 
   let timer: number | undefined;
   input.addEventListener('input', () => {
