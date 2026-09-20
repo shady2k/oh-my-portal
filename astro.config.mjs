@@ -1,4 +1,7 @@
 // @ts-check
+import nodeFs from 'node:fs';
+import nodePath from 'node:path';
+
 import { satteri } from '@astrojs/markdown-satteri';
 import { defineConfig } from 'astro/config';
 
@@ -12,6 +15,18 @@ import { codeTheme, syntaxVariables } from './src/styles/code-theme.ts';
 // `||`, not `??`: an empty SITE_URL is the same mistake as an unset one, and CI
 // variables arrive empty far more often than they arrive absent.
 const site = process.env.SITE_URL || 'https://example.com';
+
+/**
+ * What a content picture may be, and what to call it. The extensions are the
+ * ones `COVER_IMAGE` in `src/schema/frontmatter.ts` accepts; keep the two lists
+ * together or dev will serve a file the schema would have refused.
+ *
+ * @type {Record<string, string>}
+ */
+const IMAGE_TYPES = {
+  '.webp': 'image/webp', '.avif': 'image/avif', '.png': 'image/png',
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml',
+};
 
 /**
  * Content images.
@@ -42,6 +57,66 @@ const contentImages = {
       });
       const slugs = await readdir(from, { withFileTypes: true });
       logger.info(`картинки контента: ${slugs.filter((d) => d.isDirectory()).length} статей`);
+    },
+    /*
+     * The copy above runs at `astro:build:done`, which the dev server never
+     * reaches — so without this every content picture is a 404 in `npm run dev`,
+     * the one command the instructions send an agent to. Serving them from disk
+     * here costs nothing and keeps dev showing what a build would.
+     */
+    'astro:server:setup': ({ server, logger }) => {
+      const from = process.env.IMAGES_DIR;
+      if (!from) return;
+      const { createReadStream, realpathSync, statSync } = nodeFs;
+      let root;
+      try {
+        /* The real directory, so a symlinked IMAGES_DIR still compares equal below. */
+        root = realpathSync(nodePath.resolve(from));
+      } catch {
+        return logger.warn(`IMAGES_DIR не существует, картинки в dev не отдаются: ${from}`);
+      }
+      server.middlewares.use('/images', (req, res, next) => {
+        let file;
+        let stat;
+        try {
+          /* A malformed percent escape is a bad request, not a crash. */
+          const rel = decodeURIComponent((req.url ?? '/').split('?')[0]);
+          /*
+           * Resolve the link, then compare. A lexical check passes a symlink
+           * inside the tree that points anywhere on disk, and both `stat` and
+           * the read below follow it — which matters because `HOST=0.0.0.0`
+           * puts this server on the network.
+           */
+          file = realpathSync(nodePath.resolve(root, `.${rel}`));
+          if (file !== root && !file.startsWith(root + nodePath.sep)) return next();
+          stat = statSync(file);
+        } catch {
+          return next();
+        }
+        if (!stat.isFile()) return next();
+        /*
+         * Only the types a cover or a body picture may be. The build copies
+         * this tree while skipping `manifest.json`, and an unknown file served
+         * here as a byte stream would be one more thing dev shows that a build
+         * does not.
+         */
+        const type = IMAGE_TYPES[nodePath.extname(file).toLowerCase()];
+        if (!type) return next();
+        res.setHeader('Content-Type', type);
+        res.setHeader('Content-Length', String(stat.size));
+        /*
+         * An `error` after the handler returns is asynchronous, and Connect
+         * cannot catch it — unhandled, it takes the dev server down. The file
+         * can still vanish between the stat above and the open below.
+         */
+        const body = createReadStream(file);
+        body.on('error', () => {
+          if (!res.headersSent) res.statusCode = 500;
+          res.end();
+        });
+        body.pipe(res);
+      });
+      logger.info(`картинки контента в dev: ${root}`);
     },
   },
 };

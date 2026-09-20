@@ -6,10 +6,10 @@
   "description": "An ai-first publishing engine: markdown with frontmatter in git, built for an agent publishing pipeline.",
   "scripts": {
     "agent:setup": "npm ci --include=dev && node scripts/setup-agent.ts",
-    "dev": "PREVIEW=1 CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro dev",
+    "dev": "PREVIEW=1 CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects IMAGES_DIR=examples/images astro dev",
     "build": "astro build && pagefind --site dist && node scripts/check-outputs.ts",
-    "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro build && pagefind --site dist && CHECK_PLACEHOLDER_HOST=allow node scripts/check-outputs.ts",
-    "preview": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro preview",
+    "build:examples": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects IMAGES_DIR=examples/images astro build && pagefind --site dist && CHECK_PLACEHOLDER_HOST=allow node scripts/check-outputs.ts",
+    "preview": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects IMAGES_DIR=examples/images astro preview",
     "preview:content": "CONTENT_DIR=content/posts DATA_DIR=content/data PROJECTS_DIR=content/projects IMAGES_DIR=content/images astro preview",
     "check": "CONTENT_DIR=examples/posts DATA_DIR=examples/data PROJECTS_DIR=examples/projects astro check",
     "redirects": "node scripts/gen-redirects.ts",
