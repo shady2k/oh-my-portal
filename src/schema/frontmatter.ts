@@ -15,6 +15,23 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** A site-absolute path with a trailing slash: `/`, `/about/`, `/tag/k8s/`. */
 const PATH = /^\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*$/;
 
+/**
+ * A content picture: `/images/<entry>/<name>.<ext>`.
+ *
+ * Spelled out segment by segment rather than as `[^?#]+`, which let a dot
+ * segment through — `/images/../og.png` passed the schema and then resolved to
+ * a file this site really does ship, so the build gate saw nothing wrong while
+ * the picture was not in the content tree at all. Every segment must start with
+ * a letter or digit, which is what excludes `.` and `..`, empty segments and
+ * leading whitespace in one rule.
+ *
+ * Extensions are lowercase on purpose. The file is served by a case-sensitive
+ * static host, so `cover.JPG` on disk and `cover.jpg` here is a broken picture
+ * in production and a working one on a developer's laptop.
+ */
+export const COVER_IMAGE =
+  /^\/images\/(?:[a-zA-Z0-9][a-zA-Z0-9._-]*\/)+[a-zA-Z0-9][a-zA-Z0-9._-]*\.(?:svg|webp|png|jpe?g|avif)$/;
+
 const slug = z.string().regex(SLUG, 'lowercase words separated by single hyphens');
 
 /** `tools` and `recipe.stack` are the same shape and are kept identical on purpose. */
@@ -90,6 +107,37 @@ export const frontmatter = z
     tools: z.array(toolRef).optional(),
     sources: z.array(z.url()).optional(),
     related: z.array(slug).optional(),
+    /**
+     * The entry's own picture, shown beside it in the homepage journal.
+     *
+     * Named here rather than taken from the body: the first picture in an
+     * article is usually a diagram, and a diagram at thumbnail size is grey
+     * noise. A cover is chosen for that size, which only the author can do.
+     *
+     * Under `/images/` like every other content picture, so the file travels
+     * with the article it belongs to and `check-outputs.ts` proves it reached
+     * the build. Optional, because every article written before this field
+     * existed must keep building.
+     */
+    cover: z
+      .strictObject({
+        image: z
+          .string()
+          .regex(
+            COVER_IMAGE,
+            'a picture under /images/, lowercase extension, e.g. /images/my-entry/cover.webp',
+          ),
+        /**
+         * What the picture shows. The listing thumbnail is hidden from
+         * assistive technology — the entry title beside it is the accessible
+         * name — so this describes the picture wherever it is shown on its own.
+         *
+         * Trimmed before the length is checked: a description of three spaces
+         * satisfies `min(1)` and describes nothing.
+         */
+        alt: z.string().trim().min(1).max(240),
+      })
+      .optional(),
     /**
      * The projects this entry belongs to: each one's page lists the entry, and
      * the entry links back. One slug, or a list for an entry about several;

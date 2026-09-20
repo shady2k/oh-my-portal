@@ -292,9 +292,15 @@ result and a browser tab both truncate from the right. The index inverts it: the
 site is the subject there, so it leads with the name and follows with the
 headline.
 
-The social card is one static image for the whole site, built by
-`scripts/og-card.ts` from the same tokens and faces the pages use. Per-article
-cards wait on the image pipeline, which does not exist yet.
+An entry that names a `cover` is shared with that picture; every other page is
+shared with one static card for the whole site, built by `scripts/og-card.ts`
+from the same tokens and faces the pages use. The fixed card is the fallback
+rather than a stopgap, because most entries carry no picture of their own.
+
+The site card declares its dimensions and a cover does not. Content pictures are
+copied in after the build, so nothing in the build has opened one, and a crawler
+told the wrong size renders a broken frame while one told nothing measures the
+file itself.
 
 ### Redirect rules
 
@@ -928,6 +934,27 @@ speaking in too many voices at once, and each cut below has one reason.
   underlined words in the data face with a quiet count, not boxed chips, and the
   kind beside the size in full listings is likewise unboxed — nothing in the
   metadata wears a frame.
+
+Entry covers on the homepage were built and then removed (2026-09-20). An entry
+may name a `cover` in its frontmatter; the homepage journal rows briefly showed
+it, in the zone a compact row leaves empty, on the argument that a cover is
+authored content rather than a decoration slot and that the row was returning to
+the archive's three-zone grammar rather than growing an element.
+
+Looking at it settled it against the argument, which is why this paragraph
+replaces the pass rather than deleting it. Three pictures ended up stacked in one
+right-hand column — the experiment drawing and two thumbnails below it, all the
+same rectangle — and the drawing stopped being the one bold thing on the page.
+That is exactly the cost the two-scales rule above was protecting, and it reads
+as a rule of thumb until you see it. In the dark theme a cover with a light
+ground punched holes in the page, which no frame or background on this side can
+fix, because the ground is inside the picture. At the size a journal row affords,
+neither thumbnail said what it was. And a row without a cover read as a picture
+that failed to load rather than as an entry that has none.
+
+The field stays, and its consumer is the per-entry social card above: a cover is
+the size of a card, where it says something, and not the size of a listing
+thumbnail, where it does not.
 
 ### Previous direction (historical rationale)
 

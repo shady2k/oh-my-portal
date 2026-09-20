@@ -46,15 +46,24 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 const origin = new URL('/', Astro.site);
 
 /*
- * One card for the whole site, not one per article.
+ * An entry's own cover when it named one, and the site's card otherwise.
  *
- * Per-post cards need the image pipeline that does not exist yet
- * (oh-my-portal-xts); this is the fallback that has to exist first, and a link
- * with no card at all is what every share into a chat window looked like until
- * now. `scripts/og-card.ts` builds it from the same tokens and faces the site
- * uses, so it cannot drift into looking like somebody else's site.
+ * The fixed card stays the fallback rather than a stopgap: most entries carry
+ * no picture, and a link with no card at all is what every share into a chat
+ * window looked like before it existed. `scripts/og-card.ts` builds it from the
+ * same tokens and faces the site uses, so it cannot drift into looking like
+ * somebody else's site.
+ *
+ * Its dimensions are declared and a cover's are not. Content pictures are
+ * copied in at `astro:build:done`, so nothing here has ever opened one and any
+ * number this page stated would be a guess — and a crawler handed wrong
+ * dimensions renders a broken frame, while one handed none measures the file.
  */
-const card = new URL('/og.png', Astro.site);
+const cover = article?.cover;
+const card = cover ? new URL(cover.image, Astro.site) : new URL('/og.png', Astro.site);
+/* What the card actually says. The fixed one is a picture of words, so it is
+   quoted here rather than described; a cover carries the author's own alt. */
+const cardAlt = cover?.alt ?? 'Полевой журнал — домашняя инфраструктура, инструменты и ИИ-агенты';
 
 /* Nothing structured on a page that asked not to be indexed — drafts, /search/
    and the 404. Describing yourself to a crawler you just turned away is the same
@@ -131,15 +140,13 @@ const sections = [
     <meta property="og:site_name" content={site} />
     <meta property="og:locale" content={ogLocale(lang)} />
     <meta property="og:image" content={card} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    {/* What the card actually says, word for word. It is one fixed image, so
-        alt text derived from the page — or from the author's name, which the
-        card does not carry — would describe something the reader is not seeing. */}
-    <meta
-      property="og:image:alt"
-      content="Полевой журнал — домашняя инфраструктура, инструменты и ИИ-агенты"
-    />
+    {!cover && (
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+      </>
+    )}
+    <meta property="og:image:alt" content={cardAlt} />
 
     {
       article && (

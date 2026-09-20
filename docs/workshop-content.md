@@ -80,6 +80,50 @@ Write a caption describing the picture as a metaphor, not measured evidence.
 Astro creates responsive WebP images, with the original accessible on click.
 The source illustration and generation prompt are in `src/assets/illustrations/`.
 
+## An entry's cover
+
+An entry may name one picture to stand for it. It is the card the entry is
+shared with — in a chat window, in a feed reader, in a search result — in place
+of the site's fixed one. It appears nowhere on the site's own pages.
+
+```yaml
+cover:
+  image: /images/my-entry/cover.webp
+  alt: "Что на картинке — одним предложением."
+```
+
+The path is absolute under `/images/`, like every other content picture, so the
+file travels with the article. Every segment must begin with a letter or digit,
+which is what keeps a dot segment such as `/images/../og.png` out — that one
+resolved onto a real file and passed the build gate while pointing outside the
+content tree entirely. Extensions are lowercase: the static host is
+case-sensitive, so `cover.JPG` on disk against `cover.jpg` here is a working
+picture on your laptop and a broken one in production.
+
+`alt` describes the picture and is required: it becomes `og:image:alt`, which is
+what somebody using a screen reader is told the shared card shows.
+
+The build refuses to finish if the file is not there. A card lives in the head
+rather than on the page, so a missing one is invisible on the site and shows up
+only as a blank preview in somebody else's chat window — which is exactly the
+kind of failure the build gate exists to catch before a reader does.
+
+The cover is named here rather than taken from the body on purpose. The first
+picture in an article is usually a diagram, and a diagram outside its article
+explains nothing; a cover is chosen for the job, which only the author can judge.
+
+Author it at **1200×630**, which is the size every card reader expects, and keep
+it under about 300KB. Nothing resizes it — content pictures are copied in after
+the build — so the file you commit is the file a crawler downloads.
+
+Another shape still works, and the engine declares no dimensions for a cover
+precisely so a reader measures the file rather than trusting a number. But the
+cropping is then somebody else's: a square picture is cut to a wide frame by
+most card readers, and whatever runs along its top or bottom edge is what goes.
+If the picture's meaning lives at an edge, give it the 1200×630 frame yourself.
+
+The field is optional; an entry without one is shared with the site's card.
+
 ## A change of mind
 
 Append a revision to the original article frontmatter and advance `updated`:

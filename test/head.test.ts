@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -58,9 +58,7 @@ describe('the head of a built page', () => {
     expect(one(html, 'og:url')).toBe(`${SITE}/posts/published-example/`);
     expect(one(html, 'og:site_name')).toBe('Тестовый Журнал');
     expect(one(html, 'og:locale')).toBe('ru_RU');
-    expect(one(html, 'og:image')).toBe(`${SITE}/og.png`);
     expect(one(html, 'twitter:card')).toBe('summary_large_image');
-    expect(one(html, 'twitter:image')).toBe(`${SITE}/og.png`);
   });
 
   it('calls a listing a website rather than an article', () => {
@@ -86,6 +84,53 @@ describe('the head of a built page', () => {
     const png = readFileSync(join(OUT, 'og.png'));
     expect(png.readUInt32BE(16)).toBe(1200);
     expect(png.readUInt32BE(20)).toBe(630);
+  });
+
+  /*
+   * The card is the one piece of the head nobody sees while working on the
+   * site: it is correct or wrong only in somebody else's chat window, so it is
+   * asserted here rather than noticed later.
+   */
+  describe('the card a link is shared with', () => {
+    const CARD = '/images/published-example/cover.webp';
+
+    it('is the entry\'s own cover when it named one', () => {
+      const html = page('posts/published-example');
+      expect(one(html, 'og:image')).toBe(`${SITE}${CARD}`);
+      expect(one(html, 'twitter:image')).toBe(`${SITE}${CARD}`);
+      expect(one(html, 'og:image:alt')).toContain('фикстуры');
+    });
+
+    it('states no dimensions for a cover, having never opened the file', () => {
+      // A wrong number renders a broken frame; none makes the reader measure.
+      const html = page('posts/published-example');
+      expect(meta(html, 'og:image:width')).toEqual([]);
+      expect(meta(html, 'og:image:height')).toEqual([]);
+    });
+
+    it('puts the cover in the structured data as an absolute address', () => {
+      const post = jsonLd(page('posts/published-example')).find((b) => b['@type'] === 'BlogPosting');
+      expect(post!.image).toBe(`${SITE}${CARD}`);
+    });
+
+    it('is the site card everywhere else, with the words that card carries', () => {
+      for (const path of ['', 'archive', 'about', 'projects']) {
+        const html = path ? page(path) : read('index.html');
+        expect(one(html, 'og:image'), path).toBe(`${SITE}/og.png`);
+        expect(one(html, 'twitter:image'), path).toBe(`${SITE}/og.png`);
+        expect(one(html, 'og:image:alt'), path).toBe(
+          'Полевой журнал — домашняя инфраструктура, инструменты и ИИ-агенты',
+        );
+        // The fixed card is a picture of words at a known size, so it says so.
+        expect(one(html, 'og:image:width'), path).toBe('1200');
+        expect(one(html, 'og:image:height'), path).toBe('630');
+      }
+    });
+
+    it('carries the cover it advertises into the build', () => {
+      // Same rule as og.png: a card that 404s unfurls as a blank.
+      expect(existsSync(join(OUT, 'images/published-example/cover.webp'))).toBe(true);
+    });
   });
 
   it('emits valid BlogPosting for an article', () => {

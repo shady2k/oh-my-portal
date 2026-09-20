@@ -155,3 +155,49 @@ describe('the projects an entry belongs to', () => {
     expect(projectsOf({ project: ['some-project', 'other-project'] })).toEqual(['some-project', 'other-project']);
   });
 });
+
+describe('an entry cover', () => {
+  const cover = { image: '/images/kubernetes-pod-logs/cover.webp', alt: 'Карандашный набросок узла и двух веток.' };
+
+  it('is optional, so entries written before the field keep building', () => {
+    expect(parse().success).toBe(true);
+  });
+
+  it('accepts a picture under /images/ with its description', () => {
+    expect(parse({ cover }).success).toBe(true);
+  });
+
+  it('requires the description, because the picture is shown on its own elsewhere', () => {
+    rejects({ cover: { image: cover.image } });
+    rejects({ cover: { ...cover, alt: '' } });
+  });
+
+  it('refuses a path that is not a content picture', () => {
+    // Somebody else's host learns about every reader; the build cannot prove it exists.
+    rejects({ cover: { ...cover, image: 'https://example.com/cover.webp' } });
+    rejects({ cover: { ...cover, image: '/assets/cover.webp' } });
+    rejects({ cover: { ...cover, image: '/images/kubernetes-pod-logs/cover.pdf' } });
+  });
+
+  it('refuses a dot segment, which resolves out of the content tree', () => {
+    // `/images/../og.png` reaches a file this site really ships, so the build
+    // gate saw a picture that was there and never noticed it was the wrong one.
+    rejects({ cover: { ...cover, image: '/images/../og.png' } });
+    rejects({ cover: { ...cover, image: '/images/a/./cover.webp' } });
+    rejects({ cover: { ...cover, image: '/images/a//cover.webp' } });
+    rejects({ cover: { ...cover, image: '/images/a b/cover.webp' } });
+    rejects({ cover: { ...cover, image: '/images/cover.webp' } });
+  });
+
+  it('refuses an uppercase extension, which a case-sensitive host would not find', () => {
+    rejects({ cover: { ...cover, image: '/images/kubernetes-pod-logs/COVER.JPG' } });
+  });
+
+  it('refuses a description that is only whitespace', () => {
+    rejects({ cover: { ...cover, alt: '   ' } });
+  });
+
+  it('refuses a field nobody defined inside it', () => {
+    rejects({ cover: { ...cover, caption: 'подпись' } });
+  });
+});

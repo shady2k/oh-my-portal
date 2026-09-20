@@ -120,14 +120,26 @@ walk('');
  * it a machine's problem before it is a reader's.
  */
 const referenced = new Set<string>();
+/*
+ * An entry's social card names its picture by absolute URL, so the pattern
+ * below — a path right after a quote — never saw it, and a cover that never
+ * reached the build was a link that unfurls as a blank with nothing on the site
+ * itself looking wrong. Matched against this site's own origin only: an article
+ * may legitimately name a picture on somebody else's host, and this build has
+ * no business asserting that one exists.
+ */
+const origin = /rel="canonical" href="(https?:\/\/[^/"]+)/.exec(read('index.html') ?? '')?.[1];
+const ownCard = origin
+  ? new RegExp(`${origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\/images\\/[^"')\\s]+)`, 'g')
+  : undefined;
 const collect = (dir: string) => {
   for (const entry of readdirSync(join(dist, dir), { withFileTypes: true })) {
     const rel = dir ? `${dir}/${entry.name}` : entry.name;
     if (entry.isDirectory()) collect(rel);
     else if (entry.name.endsWith('.html') || entry.name.endsWith('.md')) {
-      for (const m of readFileSync(join(dist, rel), 'utf8').matchAll(/["(](\/images\/[^"')\s]+)/g)) {
-        referenced.add(m[1]);
-      }
+      const text = readFileSync(join(dist, rel), 'utf8');
+      for (const m of text.matchAll(/["(](\/images\/[^"')\s]+)/g)) referenced.add(m[1]);
+      if (ownCard) for (const m of text.matchAll(ownCard)) referenced.add(m[1]);
     }
   }
 };

@@ -34,6 +34,32 @@ describe('the workshop and changes of mind', () => {
   });
 });
 
+describe('an entry cover', () => {
+  /*
+   * The cover is the card a link is shared with (test/head.test.ts) and nothing
+   * else. The homepage journal showed it for a day and it was removed after it
+   * was looked at (design §12), so this pins the absence rather than trusting
+   * that nobody adds it back by making some listing compact.
+   */
+  it('reaches the head of its own entry and no page body or listing', () => {
+    const body = (html: string) => html.slice(html.indexOf('<body'));
+    for (const path of ['index.html', 'archive/index.html', 'projects/live-thing/index.html']) {
+      expect(read(path), path).not.toContain('cover.webp');
+    }
+    const article = read('posts/published-example/index.html');
+    expect(article).toContain('cover.webp');
+    expect(body(article)).not.toContain('cover.webp');
+  });
+
+  it('stays out of the machine twins, which carry text and not furniture', () => {
+    expect(read('posts/published-example.md')).not.toContain('cover.webp');
+    expect(JSON.parse(read('posts/published-example.json'))).not.toHaveProperty('cover');
+    for (const entry of JSON.parse(read('index.json')).posts) {
+      expect(entry).not.toHaveProperty('cover');
+    }
+  });
+});
+
 beforeAll(() => build({}, OUT), 180_000);
 
 describe('R3: a way to make contact, from any page', () => {

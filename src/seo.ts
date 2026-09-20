@@ -67,6 +67,11 @@ export interface ArticleMeta {
    * the wrong name is not.
    */
   byHuman: boolean;
+  /**
+   * The entry's own picture, if it named one. It becomes this article's social
+   * card in place of the site's fixed one, and `BlogPosting.image`.
+   */
+  cover?: { image: string; alt: string };
 }
 
 const iso = (date: Date) => date.toISOString();
@@ -105,6 +110,8 @@ export function structuredData(input: LdInput): Record<string, unknown>[] {
       datePublished: iso(article.published),
       ...(article.modified ? { dateModified: iso(article.modified) } : {}),
       ...(article.byHuman && person ? { author: person } : {}),
+      /* Absolute, because a crawler resolves this against nothing. */
+      ...(article.cover ? { image: new URL(article.cover.image, site).href } : {}),
       ...(article.tags.length ? { keywords: article.tags.join(', ') } : {}),
       inLanguage: lang,
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonical.href },

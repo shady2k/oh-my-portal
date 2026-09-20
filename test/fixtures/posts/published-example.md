@@ -15,6 +15,9 @@ summary: "Существует в сборке."
 tags: [homelab]
 lang: ru
 project: [live-thing, sibling-thing]
+cover:
+  image: /images/published-example/cover.webp
+  alt: "Синтетическая обложка фикстуры: два узла, соединённых линией."
 tools:
   - name: wireguard
     version: "1.0.20250521"

@@ -9,6 +9,9 @@ summary: "После сброса контекста агент повторил
 tags: [ai-agents]
 lang: ru
 related: [agent-memory-experiment]
+cover:
+  image: /images/memory-reset-check/cover.webp
+  alt: "Синтетическая обложка: карандашный набросок двух узлов, соединённых линией, один перечёркнут"
 project: example-engine
 ---
 

@@ -61,6 +61,17 @@ describe('a preview build', () => {
       'name="robots"',
     );
   });
+
+  /*
+   * The only entry in any build that is an article and names no cover, so the
+   * only place the fallback can be asserted on an article rather than on a
+   * listing page.
+   */
+  it('shares an entry that names no cover with the site card', () => {
+    const html = readFileSync(page('posts/draft-example', OUT_PREVIEW), 'utf8');
+    expect(html).toContain('property="og:image" content="https://journal.example.test/og.png"');
+    expect(html).toContain('property="og:image:width" content="1200"');
+  });
 });
 
 describe('the ai-first outputs (R10)', () => {
@@ -113,6 +124,19 @@ describe('the R10 gate', () => {
 
   it('passes a complete build', () => {
     expect(check(OUT)).toBe(0);
+  });
+
+  it('fails a build whose social card is not in it', () => {
+    // A card lives in the head, so this one is invisible on the site itself and
+    // shows up as a blank unfurl in somebody else's chat window.
+    const victim = join(OUT, 'images/published-example/cover.webp');
+    const saved = readFileSync(victim);
+    rmSync(victim);
+    try {
+      expect(check(OUT)).toBe(1);
+    } finally {
+      writeFileSync(victim, saved);
+    }
   });
 
   it('fails a build that lost a markdown twin', () => {
