@@ -95,12 +95,7 @@ between `br-agent-instructions` markers, with a note before it saying which two
 parts of it this repository overrides. Never edit inside the markers —
 `br agents --update` replaces that region wholesale.
 
-Memory left the tracker together with `bd`. Recall is now `deja` over the
-session transcripts of every agent on this machine:
-
-```bash
-deja "<what you are doing>"       # was: bd memories
-```
+Memory left the tracker together with `bd`. Nothing replaced it — personal recall is your own session notes.
 
 Unchanged and still forbidden: **TodoWrite, TaskCreate and markdown TODO
 lists.** `br` is the tracker for all work, including your own checklists.
@@ -110,7 +105,6 @@ lists.** `br` is the tracker for all work, including your own checklists.
 | Tool | Purpose | When |
 |---|---|---|
 | `br` | issue tracker | always |
-| `deja` | recall across past agent sessions | before debugging an error or reimplementing anything |
 | `repowise` | codebase docs and graph | **once there is code** — the repo is documentation only right now, there is nothing to index |
 
 ## Running the site locally

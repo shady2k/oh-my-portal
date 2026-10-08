@@ -97,12 +97,7 @@ drift. Two parts of it do not apply — its session protocol ends in `git commit
 and `git push`, and its command list omits the attribution flags — and a note
 before the markers in AGENTS.md says so.
 
-Memory left the tracker together with `bd`. Recall is now `deja` over the
-session transcripts of every agent on this machine:
-
-```bash
-deja "<what you are doing>"       # was: bd memories
-```
+Memory left the tracker together with `bd`. Nothing replaced it — personal recall is your own session notes.
 
 Unchanged and still forbidden: **TodoWrite, TaskCreate and markdown TODO
 lists.** `br` is the tracker for all work, including your own checklists.
@@ -112,7 +107,6 @@ lists.** `br` is the tracker for all work, including your own checklists.
 | Tool | Purpose | When |
 |---|---|---|
 | `br` | issue tracker | always |
-| `deja` | recall across past agent sessions | before debugging an error or reimplementing anything |
 | `repowise` | codebase docs and graph | **once there is code** — the repo is documentation only right now, there is nothing to index |
 
 ## Running the site locally
