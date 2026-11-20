@@ -131,11 +131,21 @@ summary: "..."
 since:   2026-09-01             # when that state was last true
 stages:  [ { title, state: done | current | next, post? } ]   # 2..5, optional
 question, observation, featured, sketch, repo, site            # optional
+observation_date: 2026-09-08  # optional; dates the observation, not the state
+version: v1.0.0               # optional; manual release fallback
+release_date: 2026-09-08      # optional; paired with the manual version
 ```
 
 `state` is what makes a project worth listing — a list of repository links says
 nothing a profile page would not, and it goes stale without a reader being able
 to tell, while "archived since 2024" is still true a year later.
+
+For public GitHub repositories, a build reads the latest published stable
+release, or the first tag returned by GitHub if there is no release. A
+lightweight tag can only show its target commit date, labelled as such. If
+GitHub has no version or cannot be reached, the build uses the manual `version`
+and `release_date`, if set. `PROJECT_RELEASES=off` disables the network lookup
+for offline checks. `since` never claims to date the observation.
 
 A post names its project with `project: some-project`, or several with
 `project: [some-project, other-project]` when it is about more than one; each

@@ -4,6 +4,8 @@ import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import PageHeader from '../../components/ui/PageHeader.astro';
 import EditorialNote from '../../components/ui/EditorialNote.astro';
+import ProjectObservation from '../../components/ProjectObservation.astro';
+import ProjectRelease from '../../components/ProjectRelease.astro';
 import ExperimentSketch from '../../components/ExperimentSketch.astro';
 import ExperimentTrail from '../../components/ExperimentTrail.astro';
 import { displayDate } from '../../dates.ts';
@@ -38,7 +40,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
     <ul class="register">
       {
-        projects.map(({ id, data }) => (
+        projects.map(({ id, data, release }) => (
           <li id={id}>
             <div class:list={['ui-editorial', { 'has-art': !!data.sketch }]}>
               <div>
@@ -48,8 +50,9 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
                 </div>
                 <h2><a href={projectPath({ id })}>{data.title}</a></h2>
                 <p class="summary ui-reading">{data.summary}</p>
+                <ProjectRelease release={release} />
                 {data.stages && <ExperimentTrail stages={data.stages} />}
-                {data.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{data.observation}</EditorialNote></div>}
+                {data.observation && <div class="observation"><ProjectObservation data={data} /></div>}
                 {!data.sketch && data.question && <div class="question"><EditorialNote label="Открытый вопрос">{data.question}</EditorialNote></div>}
                 <p class="links" data-pagefind-ignore>
                   <a href={projectPath({ id })}>Страница проекта</a>

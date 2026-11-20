@@ -7,6 +7,10 @@ state: active
 summary: Проверяет активное состояние.
 since: 2026-02-01
 question: Что проверяет живой проект?
+observation: На стенде проверили прототип.
+observation_date: 2026-02-05
+version: v1.2.3
+release_date: 2026-02-03
 stages:
   - title: Прототип
     state: done

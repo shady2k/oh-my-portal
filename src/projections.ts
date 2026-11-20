@@ -1,5 +1,6 @@
 import { stringify as toYaml } from 'yaml';
 
+import { releaseLabel, type ProjectRelease } from './project-releases.ts';
 import type { Post } from './posts.ts';
 import { projectsOf } from './schema/frontmatter.ts';
 import type { ProjectFrontmatter } from './schema/project.ts';
@@ -9,6 +10,7 @@ export interface ProjectEntry {
   id: string;
   body?: string;
   data: ProjectFrontmatter;
+  release?: ProjectRelease;
 }
 
 /**
@@ -213,6 +215,16 @@ export function aboutMarkdown(
  * agent summarising someone's work should be able to say a project is archived
  * rather than inferring liveness from a commit date.
  */
+function releaseText(release: ProjectRelease): string {
+  const when = release.date ? ` · ${release.dateKind === 'commit' ? 'коммит от ' : ''}${iso(release.date)}` : '';
+  return `${releaseLabel(release)} ${release.version}${when}`;
+}
+
+function observationText(data: ProjectFrontmatter): string {
+  const when = data.observation_date ? ` (${iso(data.observation_date)})` : data.since ? ` (состояние проекта с ${iso(data.since)})` : '';
+  return `Наблюдение${when}: ${data.observation}`;
+}
+
 export function projectsMarkdown(projects: ProjectEntry[], label: Record<string, string>, site: URL, body?: string): string {
   const lines = ['# Проекты', ''];
   if (body) lines.push(body.trim(), '');
@@ -223,12 +235,13 @@ export function projectsMarkdown(projects: ProjectEntry[], label: Record<string,
     if (data.question) lines.push(`Открытый вопрос: ${data.question}`, '');
     if (data.sketch) lines.push(data.sketch.caption, '');
     if (data.sketch?.annotations) lines.push(`Пометки к рисунку: ${data.sketch.annotations.join('; ')}.`, '');
-    if (data.observation) lines.push(`Наблюдение: ${data.observation}`, '');
+    if (data.observation) lines.push(observationText(data), '');
     for (const stage of data.stages ?? []) {
       lines.push(`- ${stage.title} (${stage.state})${stage.post ? `: /posts/${stage.post}/` : ''}`);
     }
     lines.push(`- состояние: ${label[data.state] ?? data.state} (\`${data.state}\`)`);
     if (data.since) lines.push(`- с: ${iso(data.since)}`);
+    if (project.release) lines.push(`- ${releaseText(project.release)}`);
     if (data.repo) lines.push(`- исходники: ${data.repo}`);
     if (data.site) lines.push(`- сайт: ${data.site}`);
     lines.push(`- markdown: ${absolute(site, `/projects/${project.id}.md`)}`);
@@ -246,6 +259,7 @@ export function projectMarkdown(project: ProjectEntry, posts: Post[], site: URL,
   const lines = [`# ${data.title}`, '', data.summary, ''];
   lines.push(`- состояние: ${label[data.state] ?? data.state} (\`${data.state}\`)`);
   if (data.since) lines.push(`- с: ${iso(data.since)}`);
+  if (project.release) lines.push(`- ${releaseText(project.release)}`);
   if (data.repo) lines.push(`- исходники: ${data.repo}`);
   if (data.site) lines.push(`- сайт: ${data.site}`);
   lines.push(`- адрес: ${absolute(site, projectPath(project))}`, '');
@@ -256,7 +270,7 @@ export function projectMarkdown(project: ProjectEntry, posts: Post[], site: URL,
     }
     lines.push('');
   }
-  if (data.observation) lines.push(`Наблюдение: ${data.observation}`, '');
+  if (data.observation) lines.push(observationText(data), '');
   if (data.question) lines.push(`Открытый вопрос: ${data.question}`, '');
   if (data.sketch) lines.push(data.sketch.caption, '');
   if (data.sketch?.annotations) lines.push(`Пометки к рисунку: ${data.sketch.annotations.join('; ')}.`, '');

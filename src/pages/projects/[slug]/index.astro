@@ -3,6 +3,8 @@ import { render } from 'astro:content';
 
 import Base from '../../../layouts/Base.astro';
 import EditorialNote from '../../../components/ui/EditorialNote.astro';
+import ProjectObservation from '../../../components/ProjectObservation.astro';
+import ProjectRelease from '../../../components/ProjectRelease.astro';
 import ExperimentSketch from '../../../components/ExperimentSketch.astro';
 import ExperimentTrail from '../../../components/ExperimentTrail.astro';
 import Listing from '../../../components/Listing.astro';
@@ -40,6 +42,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
         </p>
         <h1>{data.title}</h1>
         <p class="summary ui-reading">{data.summary}</p>
+        <ProjectRelease release={project.release} />
         {(data.repo || data.site) && <p class="links" data-pagefind-ignore>
           {data.repo && <a href={data.repo} {...linkAttrs(data.repo, Astro.site)}>Исходники</a>}
           {data.site && <a href={data.site} {...linkAttrs(data.site, Astro.site)}>Сайт проекта</a>}
@@ -49,7 +52,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     </header>
 
     {data.stages && <ExperimentTrail stages={data.stages} />}
-    {data.observation && <div class="note"><EditorialNote label="Последнее наблюдение" accent>{data.observation}</EditorialNote></div>}
+    {data.observation && <div class="note"><ProjectObservation data={data} /></div>}
     {data.question && <div class="note"><EditorialNote label="Открытый вопрос">{data.question}</EditorialNote></div>}
 
     {project.body?.trim() && <div class="prose ui-reading body"><Content /></div>}

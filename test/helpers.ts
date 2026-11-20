@@ -19,6 +19,7 @@ export function build(env: Record<string, string>, out: string) {
       CONTENT_DIR: 'test/fixtures/posts',
       DATA_DIR: 'test/fixtures/data',
       PROJECTS_DIR: 'test/fixtures/projects',
+      PROJECT_RELEASES: 'off',
       IMAGES_DIR: 'test/fixtures/images',
       /*
        * A real host, so the fixtures exercise the path a deployment takes. The

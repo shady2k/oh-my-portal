@@ -44,6 +44,16 @@ describe('a production build', () => {
     expect(existsSync(join(OUT, 'rss/index.xml'))).toBe(true);
   });
 
+  it('shows the manual release and actual observation date in both project formats', () => {
+    const html = readFileSync(page('projects/live-thing'), 'utf8');
+    expect(html).toContain('v1.2.3');
+    expect(html).toContain('datetime="2026-02-03"');
+    expect(html).toContain('datetime="2026-02-05"');
+    const markdown = readFileSync(join(OUT, 'projects/live-thing.md'), 'utf8');
+    expect(markdown).toContain('Релиз v1.2.3 · 2026-02-03');
+    expect(markdown).toContain('Наблюдение (2026-02-05):');
+  });
+
   it('emits a 404 page', () => {
     expect(existsSync(join(OUT, '404.html'))).toBe(true);
   });

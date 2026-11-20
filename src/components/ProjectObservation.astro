@@ -1,0 +1,8 @@
+---
+import EditorialNote from './ui/EditorialNote.astro';
+import type { ProjectFrontmatter } from '../schema/project.ts';
+
+interface Props { data: Pick<ProjectFrontmatter, 'observation' | 'observation_date' | 'since'> }
+const { data } = Astro.props;
+---
+{data.observation && <EditorialNote label="Последнее наблюдение" date={data.observation_date ?? data.since} datePrefix={data.observation_date ? '' : 'состояние проекта с '} accent>{data.observation}</EditorialNote>}
