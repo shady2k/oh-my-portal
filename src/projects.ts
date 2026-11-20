@@ -8,7 +8,11 @@ import { listPosts, PREVIEW, type Post } from './posts.ts';
 import { projectsOf } from './schema/frontmatter.ts';
 import type { ProjectFrontmatter } from './schema/project.ts';
 
-export type Project = CollectionEntry<'projects'>;
+import { createReleaseLookup, type ProjectRelease } from './project-releases.ts';
+
+export type Project = CollectionEntry<'projects'> & { release?: ProjectRelease };
+
+const lookupRelease = createReleaseLookup(fetch, process.env.PROJECT_RELEASES !== 'off');
 
 /**
  * The projects this build publishes, most recently changed first, and archived
@@ -41,13 +45,14 @@ export async function listProjects(): Promise<Project[]> {
     paused: 3,
     archived: 4,
   };
-  return entries
+  const published = entries
     .filter(({ data }) => PREVIEW || data.status === 'published')
     .sort(
       (a, b) =>
         rank[a.data.state] - rank[b.data.state] ||
         (b.data.since?.getTime() ?? 0) - (a.data.since?.getTime() ?? 0),
     );
+  return Promise.all(published.map(async (entry) => ({ ...entry, release: await lookupRelease(entry.data) })));
 }
 
 /** The posts that name this project among theirs, newest first. */

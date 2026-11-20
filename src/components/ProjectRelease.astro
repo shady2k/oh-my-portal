@@ -1,0 +1,12 @@
+---
+import { displayDate } from '../dates.ts';
+import { releaseLabel, type ProjectRelease } from '../project-releases.ts';
+
+interface Props { release?: ProjectRelease }
+const { release } = Astro.props;
+---
+{release && <p class="utility">
+  {releaseLabel(release)} <b>{release.version}</b>{release.date && <>
+    {' · '}{release.dateKind === 'commit' && 'коммит от '}<time datetime={release.date.toISOString().slice(0, 10)}>{displayDate(release.date)}</time>
+  </>}
+</p>}

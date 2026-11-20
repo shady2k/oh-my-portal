@@ -1,6 +1,7 @@
 ---
 import TypedHeadline from '../components/ui/TypedHeadline.astro';
-import EditorialNote from '../components/ui/EditorialNote.astro';
+import ProjectObservation from '../components/ProjectObservation.astro';
+import ProjectRelease from '../components/ProjectRelease.astro';
 import Listing from '../components/Listing.astro';
 import Tag from '../components/Tag.astro';
 import { displayDate } from '../dates.ts';
@@ -61,7 +62,8 @@ const mottos = [author?.headline ?? 'Идеи, которые стали опы�
             <time datetime={iso(latest!.data.date)}>{displayDate(latest!.data.date)}</time>
             {latest!.data.status === 'draft' && <span>черновик</span>}
         </p>}
-        {project?.data.observation && <div class="observation"><EditorialNote label="Последнее наблюдение" accent>{project.data.observation}</EditorialNote></div>}
+        {project && <ProjectRelease release={project.release} />}
+        {project?.data.observation && <div class="observation"><ProjectObservation data={project.data} /></div>}
         <a class="read-link" href={project ? projectPath(project) : `/posts/${latest!.id}/`}>{project ? 'Как идёт эксперимент' : 'Читать запись'}</a>
       </div>
       {project && hasArt && (

@@ -2,10 +2,12 @@
 /* The styles live in styles/ui.css, not here: an article's marked takeaway
    (src/takeaways.ts) renders the same note from markdown, and one note must not
    have two implementations of its look. */
-interface Props { label: string; accent?: boolean; }
-const { label, accent = false } = Astro.props;
+import { displayDate } from '../../dates.ts';
+
+interface Props { label: string; accent?: boolean; date?: Date; datePrefix?: string }
+const { label, accent = false, date, datePrefix = '' } = Astro.props;
 ---
 <div class:list={['editorial-note', { accent }]}>
-  <p class="field-label">{label}</p>
+  <p class="field-label">{label}{date && <> · {datePrefix}<time datetime={date.toISOString().slice(0, 10)}>{displayDate(date)}</time></>}</p>
   <p class="note-text"><slot /></p>
 </div>

@@ -63,6 +63,11 @@ export const project = z.strictObject({
   featured: z.boolean().optional(),
   question: z.string().min(1).max(180).optional(),
   observation: z.string().min(1).max(240).optional(),
+  /** Actual observation date, if known; `since` dates the project state. */
+  observation_date: z.coerce.date().optional(),
+  /** Manual fallback when GitHub has no public release or tag. */
+  version: z.string().trim().min(1).max(200).optional(),
+  release_date: z.coerce.date().optional(),
   /**
    * The course of the project, authored in order. A stage may link the post that
    * records it; planned stages have none yet, and that is why the link is
